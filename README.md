@@ -19,9 +19,11 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 
 ## Installation
 
-1. Download the latest `records-and-logs-bopper-*.jar` from [Releases](../../releases).
+1. Go to the [Releases](../../releases) page and download `records-and-logs-bopper-1.0.0.jar`.
 2. Put the jar into Jingle's plugin folder: `%USERPROFILE%\.config\Jingle\plugins\` (create it if missing).
 3. Restart Jingle completely (not just minimized to tray).
+
+> **You do not need to clone the repo or run any commands.** The pre-built jar in Releases is all you need.
 
 ## Safety
 
@@ -31,9 +33,11 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 - Files locked by a running game cannot be deleted; a message is shown and you can run the cleanup again after closing the game.
 - Uninstall = delete the jar file.
 
-## Build
+## Build (for developers)
 
-Requires JDK 17 or newer. Run:
+Most users **do not need this** — just download the jar from [Releases](../../releases).
+
+If you want to build from source, you need JDK 17 or newer. Run:
 
 ```bash
 bash build.sh

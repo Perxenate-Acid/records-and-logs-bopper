@@ -21,9 +21,11 @@ SpeedrunIGT 模组会在 `%USERPROFILE%\speedrunigt\records` 保留速通记录�
 
 ## 安装
 
-1. 从 [Releases](../../releases) 下载最新的 `records-and-logs-bopper-*.jar`。
+1. 前往 [Releases](../../releases) 页面，下载 `records-and-logs-bopper-1.0.0.jar`。
 2. 将 jar 文件放入 Jingle 的插件文件夹：`%USERPROFILE%\.config\Jingle\plugins\`（不存在则创建）。
 3. 完全重启 Jingle（不是最小化到托盘后恢复）。
+
+> **无需克隆仓库或使用命令行。** Releases 页面提供的 jar 文件就是安装所需的全部内容。
 
 ## 安全说明
 
@@ -33,9 +35,11 @@ SpeedrunIGT 模组会在 `%USERPROFILE%\speedrunigt\records` 保留速通记录�
 - 被运行中游戏占用的文件无法删除；会提示信息，关闭游戏后重新清理即可。
 - 卸载 = 删除 jar 文件。
 
-## 构建
+## 构建（开发者用）
 
-需要 JDK 17 或更高版本。运行：
+大多数用户**不需要这一步** — 直接从 [Releases](../../releases) 下载 jar 即可。
+
+如果你想从源码构建，需要 JDK 17 或更高版本。运行：
 
 ```bash
 bash build.sh
