@@ -12,8 +12,8 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 - **Auto cleanup on startup** — when Jingle launches, if records or logs exceed their respective size thresholds (default 50 MB each), they are cleaned automatically. **Disabled by default**; can be toggled on independently for records and logs.
 - **Keep recent** — optionally keep the most recent N records (default 10) or logs (default 5) when cleaning.
 - **Deletion confirmation** — a warning dialog appears before any manual deletion, requiring explicit confirmation.
-- **Quick-action button** — a `Clean Records` quick-action button on the Jingle main window.
-- **Hotkey action** — bind the `Clean Records` action to any hotkey in Jingle's Hotkeys page.
+- **Quick-action buttons** — `Clean Records` and `Clean Logs` buttons on the Jingle main window.
+- **Hotkey actions** — bind `Clean Records` and `Clean Logs` to any hotkey in Jingle's Hotkeys page.
 - **MultiMC auto-detect** — automatically finds MultiMC / Prism Launcher by scanning common paths and querying running processes.
 - Settings persist in `~/.config/Jingle/records-and-logs-bopper.properties`.
 

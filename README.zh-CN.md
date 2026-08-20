@@ -14,8 +14,8 @@ SpeedrunIGT 模组会在 `%USERPROFILE%\speedrunigt\records` 保留速通记录�
 - **启动时自动清理** — Jingle 启动时，若速通记录或日志超过各自的大小阈值（默认各 50 MB），则自动清理。**默认关闭**，可分别为速通记录和日志独立开启。
 - **保留最近文件** — 清理时可选择保留最近的 N 个速通记录（默认 10 个）或日志（默认 5 个）。
 - **删除确认** — 每次手动删除前都会弹出警告对话框，需要明确确认才会执行。
-- **快捷按钮** — Jingle 主窗口上的 `Clean Records` 快捷按钮。
-- **热键动作** — 可在 Jingle 的 Hotkeys 页面将 `Clean Records` 动作绑定到任意快捷键。
+- **快捷按钮** — Jingle 主窗口上的 `Clean Records` 和 `Clean Logs` 快捷按钮。
+- **热键动作** — 可在 Jingle 的 Hotkeys 页面将 `Clean Records` 和 `Clean Logs` 动作绑定到任意快捷键。
 - **MultiMC 自动检测** — 通过扫描常见路径和查询运行中进程自动找到 MultiMC / Prism Launcher。
 - 设置保存在 `~/.config/Jingle/records-and-logs-bopper.properties`。
 
