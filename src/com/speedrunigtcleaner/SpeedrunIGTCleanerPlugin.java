@@ -31,7 +31,8 @@ import java.text.DecimalFormat;
 import java.util.Properties;
 
 /**
- * Jingle plugin that cleans up the SpeedrunIGT "records" cache folder
+ * Jingle plugin that cleans up the SpeedrunIGT "records" folder, where the mod
+ * keeps speedrun records that pile up over time
  * (located at %USERPROFILE%\speedrunigt\records).
  *
  * Features:
@@ -49,10 +50,13 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final String CONFIG_FILE_NAME = "speedrunigt-records-cleaner.properties";
     private static final String PROP_AUTO_CLEAN = "autoCleanOnStartup";
     private static final String PROP_THRESHOLD_MB = "thresholdMB";
+    private static final String PROP_KEEP_RECENT_MANUAL = "keepRecentManual";
+    private static final String PROP_KEEP_RECENT_AUTO = "keepRecentAuto";
 
     private static final boolean DEFAULT_AUTO_CLEAN = true;
-    private static final double DEFAULT_THRESHOLD_MB = 500.0;
+    private static final double DEFAULT_THRESHOLD_MB = 50.0;
     private static final double MIN_THRESHOLD_MB = 1.0;
+    private static final int KEEP_RECENT_COUNT = 10;
 
     private static final DecimalFormat MB_FORMAT = new DecimalFormat("0.0");
 
@@ -62,6 +66,8 @@ public final class SpeedrunIGTCleanerPlugin {
 
     private static boolean autoCleanEnabled = DEFAULT_AUTO_CLEAN;
     private static double thresholdMB = DEFAULT_THRESHOLD_MB;
+    private static boolean keepRecentManual = false;
+    private static boolean keepRecentAuto = false;
 
     private SpeedrunIGTCleanerPlugin() {
     }
@@ -107,17 +113,25 @@ public final class SpeedrunIGTCleanerPlugin {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 10, 5, 10);
 
-        JLabel title = new JLabel("SpeedrunIGT 记录缓存清理");
+        JLabel title = new JLabel("SpeedrunIGT 速通记录清理");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
         panel.add(title, gbc);
 
-        JLabel subtitle = new JLabel("只会删除 " + getRecordsDir() + " 内的文件，文件夹本身会保留。");
+        JLabel subtitle = new JLabel("只清理 " + getRecordsDir() + " 内由 SpeedrunIGT 模组生成的速通记录，用户自行放入的文件不会删除。");
         subtitle.setFont(subtitle.getFont().deriveFont(11f));
         panel.add(subtitle, gbc);
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(statusLabel.getFont().deriveFont(12f));
         panel.add(statusLabel, gbc);
+
+        JCheckBox keepRecentManualCheckbox = new JCheckBox(
+                "清理时保留最近 " + KEEP_RECENT_COUNT + " 个记录", keepRecentManual);
+        keepRecentManualCheckbox.addActionListener(e -> {
+            keepRecentManual = keepRecentManualCheckbox.isSelected();
+            saveConfig();
+        });
+        panel.add(keepRecentManualCheckbox, gbc);
 
         JButton cleanButton = new JButton("立即清理所有记录文件");
         cleanButton.addActionListener(e -> cleanAndReport());
@@ -136,13 +150,22 @@ public final class SpeedrunIGTCleanerPlugin {
         });
         panel.add(autoCleanCheckbox, gbc);
 
+        JCheckBox keepRecentAutoCheckbox = new JCheckBox(
+                "自动清理时保留最近 " + KEEP_RECENT_COUNT + " 个记录", keepRecentAuto);
+        keepRecentAutoCheckbox.addActionListener(e -> {
+            keepRecentAuto = keepRecentAutoCheckbox.isSelected();
+            saveConfig();
+        });
+        panel.add(keepRecentAutoCheckbox, gbc);
+
         JPanel thresholdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         thresholdRow.add(new JLabel("自动清理阈值 (MB):"));
         JTextField thresholdField = new JTextField(String.valueOf((long) thresholdMB), 8);
         thresholdRow.add(thresholdField);
         panel.add(thresholdRow, gbc);
 
-        JLabel hint = new JLabel("缓存大小超过该阈值时，Jingle 启动后会自动删除全部记录文件（保留文件夹）。");
+        JLabel hint = new JLabel("记录大小超过该阈值时，Jingle 启动后会自动清理。若勾选保留选项，则保留最近修改的 "
+                + KEEP_RECENT_COUNT + " 个记录文件。");
         hint.setFont(hint.getFont().deriveFont(11f));
         panel.add(hint, gbc);
 
@@ -185,7 +208,7 @@ public final class SpeedrunIGTCleanerPlugin {
                 QUICK_ACTION_TEXT,
                 SpeedrunIGTCleanerPlugin::cleanAndReport,
                 () -> JingleGUI.get().openTab(mainPanel),
-                "Deletes all files in ~/speedrunigt/records (keeps the folder). Right-click for settings.",
+                "Deletes SpeedrunIGT record files in ~/speedrunigt/records (keeps the folder and non-record files). Right-click for settings.",
                 true);
     }
 
@@ -197,11 +220,18 @@ public final class SpeedrunIGTCleanerPlugin {
     private static void cleanAndReport() {
         new Thread(() -> {
             try {
-                RecordsCleaner.CleanResult result = RecordsCleaner.clean(getRecordsDir());
+                int keep = keepRecentManual ? KEEP_RECENT_COUNT : 0;
+                RecordsCleaner.CleanResult result = RecordsCleaner.clean(getRecordsDir(), keep);
                 SwingUtilities.invokeLater(() -> {
                     updateStatusLabel();
-                    String message = "已删除 " + result.filesDeleted + " 个文件，释放 "
+                    String message = "已删除 " + result.filesDeleted + " 个记录文件，释放 "
                             + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB。\nrecords 文件夹已保留。";
+                    if (keep > 0) {
+                        message += "\n已保留最近 " + KEEP_RECENT_COUNT + " 个记录文件。";
+                    }
+                    if (result.filesSkipped > 0) {
+                        message += "\n已跳过 " + result.filesSkipped + " 个非模组文件（未删除）。";
+                    }
                     if (result.failures > 0) {
                         message += "\n\n注意：有 " + result.failures + " 个文件正被占用，未能删除（重启后重试即可）。";
                         JOptionPane.showMessageDialog(JingleGUI.get(), message, "SpeedrunIGT Cleaner", JOptionPane.WARNING_MESSAGE);
@@ -224,9 +254,17 @@ public final class SpeedrunIGTCleanerPlugin {
             long size = RecordsCleaner.getFolderSize(dir);
             long thresholdBytes = (long) (thresholdMB * 1024 * 1024);
             if (size > thresholdBytes) {
-                RecordsCleaner.CleanResult result = RecordsCleaner.clean(dir);
-                Jingle.log(Level.INFO, "SpeedrunIGT Cleaner: Auto-cleaned records (" + result.filesDeleted
-                        + " files, " + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB freed).");
+                int keep = keepRecentAuto ? KEEP_RECENT_COUNT : 0;
+                RecordsCleaner.CleanResult result = RecordsCleaner.clean(dir, keep);
+                String logMsg = "SpeedrunIGT Cleaner: Auto-cleaned records (" + result.filesDeleted
+                        + " files, " + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB freed)";
+                if (keep > 0) {
+                    logMsg += ", kept " + KEEP_RECENT_COUNT + " most recent records";
+                }
+                if (result.filesSkipped > 0) {
+                    logMsg += ", skipped " + result.filesSkipped + " non-record files";
+                }
+                Jingle.log(Level.INFO, logMsg + ".");
                 SwingUtilities.invokeLater(SpeedrunIGTCleanerPlugin::updateStatusLabel);
             } else if (logWhenSkipped) {
                 Jingle.log(Level.INFO, "SpeedrunIGT Cleaner: Auto-clean skipped, records size ("
@@ -255,7 +293,7 @@ public final class SpeedrunIGTCleanerPlugin {
             Path dir = getRecordsDir();
             long size = RecordsCleaner.getFolderSize(dir);
             int count = RecordsCleaner.countFiles(dir);
-            String text = "<html>当前缓存大小：<b>" + MB_FORMAT.format(size / 1024.0 / 1024.0) + " MB</b>（"
+            String text = "<html>当前记录大小：<b>" + MB_FORMAT.format(size / 1024.0 / 1024.0) + " MB</b>（"
                     + count + " 个文件）&nbsp;&nbsp;|&nbsp;&nbsp;自动清理阈值：" + (long) thresholdMB + " MB"
                     + (autoCleanEnabled ? "" : "（自动清理已关闭）") + "</html>";
             if (statusLabel != null) {
@@ -277,6 +315,8 @@ public final class SpeedrunIGTCleanerPlugin {
     private static void loadConfig() {
         autoCleanEnabled = DEFAULT_AUTO_CLEAN;
         thresholdMB = DEFAULT_THRESHOLD_MB;
+        keepRecentManual = false;
+        keepRecentAuto = false;
         if (configPath == null || !Files.exists(configPath)) {
             return;
         }
@@ -288,6 +328,8 @@ public final class SpeedrunIGTCleanerPlugin {
             if (thresholdMB < MIN_THRESHOLD_MB) {
                 thresholdMB = DEFAULT_THRESHOLD_MB;
             }
+            keepRecentManual = Boolean.parseBoolean(props.getProperty(PROP_KEEP_RECENT_MANUAL, "false"));
+            keepRecentAuto = Boolean.parseBoolean(props.getProperty(PROP_KEEP_RECENT_AUTO, "false"));
         } catch (IOException | NumberFormatException e) {
             Jingle.log(Level.WARN, "SpeedrunIGT Cleaner: Failed to load config, using defaults.");
         }
@@ -302,6 +344,8 @@ public final class SpeedrunIGTCleanerPlugin {
             Properties props = new Properties();
             props.setProperty(PROP_AUTO_CLEAN, String.valueOf(autoCleanEnabled));
             props.setProperty(PROP_THRESHOLD_MB, String.valueOf(thresholdMB));
+            props.setProperty(PROP_KEEP_RECENT_MANUAL, String.valueOf(keepRecentManual));
+            props.setProperty(PROP_KEEP_RECENT_AUTO, String.valueOf(keepRecentAuto));
             try (OutputStream out = Files.newOutputStream(configPath)) {
                 props.store(out, "SpeedrunIGT Records Cleaner config");
             }

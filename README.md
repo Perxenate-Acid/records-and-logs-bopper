@@ -1,8 +1,8 @@
 # SpeedrunIGT Records Cleaner (Jingle Plugin)
 
-A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up cached speedrun records left by the [SpeedrunIGT](https://github.com/RedLime/SpeedrunIGT) mod in `%USERPROFILE%\speedrunigt\records`.
+A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun records left by the [SpeedrunIGT](https://github.com/RedLime/SpeedRunIGT) mod in `%USERPROFILE%\speedrunigt\records`.
 
-SpeedrunIGT 会在 `%USERPROFILE%\speedrunigt\records` 文件夹里堆积大量缓存文件。本插件可以一键清空它们（保留文件夹本身），也可以设置大小阈值，在 Jingle 启动时自动清理超限缓存。
+SpeedrunIGT 模组会在 `%USERPROFILE%\speedrunigt\records` 保留速通记录，且这些记录会随使用不断堆积。本插件可以一键清空它们（保留文件夹本身），也可以设置大小阈值，在 Jingle 启动时自动清理超限记录。
 
 ## Features / 功能
 
