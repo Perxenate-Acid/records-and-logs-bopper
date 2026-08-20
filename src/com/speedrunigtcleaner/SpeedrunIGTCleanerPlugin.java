@@ -56,12 +56,12 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final String PROP_LOGS_KEEP_RECENT = "logsKeepRecent";
     private static final String PROP_MULTIMC_PATH = "multimcPath";
 
-    private static final boolean DEFAULT_AUTO_CLEAN = true;
+    private static final boolean DEFAULT_AUTO_CLEAN = false;
     private static final double DEFAULT_THRESHOLD_MB = 50.0;
     private static final double MIN_THRESHOLD_MB = 1.0;
     private static final int KEEP_RECENT_COUNT = 10;
 
-    private static final boolean DEFAULT_LOGS_AUTO_CLEAN = true;
+    private static final boolean DEFAULT_LOGS_AUTO_CLEAN = false;
     private static final double DEFAULT_LOGS_THRESHOLD_MB = 50.0;
     private static final int DEFAULT_LOGS_KEEP_RECENT = 5;
 
@@ -394,6 +394,12 @@ public final class SpeedrunIGTCleanerPlugin {
     /* ------------------------------------------------------------------ */
 
     private static void cleanAndReport() {
+        int confirm = JOptionPane.showConfirmDialog(JingleGUI.get(),
+                "\u5373\u5c06\u5220\u9664 SpeedrunIGT \u901f\u901a\u8bb0\u5f55\u6587\u4ef6\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f",
+                TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
         new Thread(() -> {
             try {
                 int keep = keepRecentManual ? KEEP_RECENT_COUNT : 0;
@@ -554,6 +560,12 @@ public final class SpeedrunIGTCleanerPlugin {
     }
 
     private static void cleanAllLogsAndReport() {
+        int confirm = JOptionPane.showConfirmDialog(JingleGUI.get(),
+                "\u5373\u5c06\u5220\u9664\u6240\u6709 MC \u65e7\u65e5\u5fd7\uff08\u4ec5\u4fdd\u7559 latest.log\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f",
+                TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
         new Thread(() -> {
             try {
                 if (multimcPath == null || multimcPath.isEmpty()) {
