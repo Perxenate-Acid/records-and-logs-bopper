@@ -1,4 +1,5 @@
 import com.speedrunigtcleaner.RecordsCleaner;
+import com.speedrunigtcleaner.LogsCleaner;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,14 +10,22 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Standalone test for RecordsCleaner (no Jingle dependency).
- * Verifies: file filtering (UUID name + content), size/count, recursive deletion,
- * folder preservation, non-record file protection, keepRecent, and no-op on
- * missing folders.
+ * Standalone test for RecordsCleaner and LogsCleaner (no Jingle dependency).
  */
 public class TestMain {
 
     public static void main(String[] args) throws IOException {
+        testRecordsCleaner();
+        testLogsCleaner();
+        System.out.println("\nALL TESTS PASSED");
+    }
+
+    // ==================================================================
+    // RecordsCleaner tests
+    // ==================================================================
+
+    private static void testRecordsCleaner() throws IOException {
+        System.out.println("=== RecordsCleaner tests ===");
         Path temp = Files.createTempDirectory("records-cleaner-test");
         Path records = temp.resolve("records");
         Files.createDirectories(records);
@@ -33,7 +42,6 @@ public class TestMain {
         Files.write(userTxt, new byte[999]);
         Path userJson = records.resolve("manual.json");
         Files.write(userJson, "{\"hello\":1}".getBytes(StandardCharsets.UTF_8));
-        // UUID-named but wrong content (no "final_igt") — should NOT be deleted
         Path fakeRecord = records.resolve(UUID.randomUUID() + ".json");
         Files.write(fakeRecord, "{\"not_a_record\":true}".getBytes(StandardCharsets.UTF_8));
 
@@ -50,7 +58,7 @@ public class TestMain {
         check(!RecordsCleaner.isRecordFile(fakeRecord), "fake record should fail content check");
         check(!RecordsCleaner.isRecordFile(temp.resolve("nope")), "non-existent file should be false");
 
-        // --- Test size/count (only counts record files by name pattern) ---
+        // --- Test size/count ---
         System.out.println("[test] --- size/count tests ---");
         long size = RecordsCleaner.getFolderSize(records);
         int count = RecordsCleaner.countFiles(records);
@@ -83,17 +91,14 @@ public class TestMain {
         System.out.println("[test] --- keepRecent tests ---");
         Path records2 = temp.resolve("records2");
         Files.createDirectories(records2);
-        // Create 5 record files with distinct modification times (oldest first).
         Path[] files = new Path[5];
         for (int i = 0; i < 5; i++) {
             files[i] = writeRecord(records2, 100 * (i + 1));
             Files.setLastModifiedTime(files[i], FileTime.from(1000L + i, TimeUnit.SECONDS));
         }
-        // Also add a non-record file to verify it's not counted.
         Path userFile2 = records2.resolve("user.txt");
         Files.write(userFile2, new byte[500]);
 
-        // Keep the 2 most recent (files[3], files[4]).
         RecordsCleaner.CleanResult r3 = RecordsCleaner.clean(records2, 2);
         System.out.println("[test] keepRecent=2: deleted=" + r3.filesDeleted + " freed=" + r3.bytesFreed
                 + " skipped=" + r3.filesSkipped);
@@ -108,22 +113,17 @@ public class TestMain {
         check(Files.exists(userFile2), "non-record file should NOT be deleted");
         check(RecordsCleaner.countFiles(records2) == 2, "should have 2 record files remaining");
 
-        // keepRecent larger than file count → keep everything.
         RecordsCleaner.CleanResult r4 = RecordsCleaner.clean(records2, 10);
         check(r4.filesDeleted == 0, "keepRecent=10 on 2 files should delete 0");
         check(RecordsCleaner.countFiles(records2) == 2, "both files should still exist");
 
-        // keepRecent=0 → delete all records.
         RecordsCleaner.CleanResult r5 = RecordsCleaner.clean(records2, 0);
         check(r5.filesDeleted == 2, "keepRecent=0 should delete all 2 record files");
         check(Files.exists(userFile2), "non-record file should still exist after keepRecent=0 clean");
         check(RecordsCleaner.countFiles(records2) == 0, "should have 0 record files");
 
-        // keepRecent on non-existent folder → no-op.
         RecordsCleaner.CleanResult r6 = RecordsCleaner.clean(temp.resolve("nope2"), 5);
         check(r6.filesDeleted == 0, "keepRecent on missing folder should be a no-op");
-
-        System.out.println("ALL TESTS PASSED");
 
         // Cleanup
         Files.deleteIfExists(userTxt);
@@ -134,7 +134,156 @@ public class TestMain {
         Files.deleteIfExists(records2);
         Files.deleteIfExists(outsideFile);
         Files.deleteIfExists(temp);
+        System.out.println("[test] RecordsCleaner tests passed.\n");
     }
+
+    // ==================================================================
+    // LogsCleaner tests
+    // ==================================================================
+
+    private static void testLogsCleaner() throws IOException {
+        System.out.println("=== LogsCleaner tests ===");
+        Path temp = Files.createTempDirectory("logs-cleaner-test");
+        Path logsDir = temp.resolve("logs");
+        Files.createDirectories(logsDir);
+
+        // --- Create active logs (should NEVER be deleted) ---
+        Path latestLog = logsDir.resolve("latest.log");
+        Files.write(latestLog, "current log content".getBytes(StandardCharsets.UTF_8));
+        Path debugLog = logsDir.resolve("debug.log");
+        Files.write(debugLog, "current debug content".getBytes(StandardCharsets.UTF_8));
+
+        // --- Create log archives (*.log.gz, should be deleted) ---
+        Path[] archives = new Path[6];
+        for (int i = 0; i < 6; i++) {
+            archives[i] = logsDir.resolve("2024-01-" + String.format("%02d", i + 1) + "-1.log.gz");
+            Files.write(archives[i], ("compressed log " + i).getBytes(StandardCharsets.UTF_8));
+            // Set distinct modification times: archives[0] oldest, archives[5] newest
+            Files.setLastModifiedTime(archives[i], FileTime.from(1000L + i, TimeUnit.SECONDS));
+        }
+
+        // --- Create debug log archives ---
+        Path debugArchive = logsDir.resolve("debug-2024-01-01-1.log.gz");
+        Files.write(debugArchive, "compressed debug log".getBytes(StandardCharsets.UTF_8));
+        Files.setLastModifiedTime(debugArchive, FileTime.from(500L, TimeUnit.SECONDS)); // oldest
+
+        // --- Create non-log files (should be skipped) ---
+        Path lockFile = logsDir.resolve("latest.log.lck");
+        Files.write(lockFile, new byte[0]);
+        Path readmeFile = logsDir.resolve("README.txt");
+        Files.write(readmeFile, "not a log".getBytes(StandardCharsets.UTF_8));
+
+        // --- Test isActiveLog / isLogArchive / isDeletableLog ---
+        System.out.println("[test] --- file type tests ---");
+        check(LogsCleaner.isActiveLog(latestLog), "latest.log should be active");
+        check(LogsCleaner.isActiveLog(debugLog), "debug.log should be active");
+        check(!LogsCleaner.isActiveLog(archives[0]), "archive should not be active");
+        check(LogsCleaner.isLogArchive(archives[0]), "archive should be log archive");
+        check(LogsCleaner.isLogArchive(debugArchive), "debug archive should be log archive");
+        check(!LogsCleaner.isLogArchive(latestLog), "latest.log should not be log archive");
+        check(LogsCleaner.isDeletableLog(archives[0]), "archive should be deletable");
+        check(LogsCleaner.isDeletableLog(debugArchive), "debug archive should be deletable");
+        check(!LogsCleaner.isDeletableLog(latestLog), "latest.log should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(debugLog), "debug.log should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(lockFile), ".lck file should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(readmeFile), "README.txt should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(temp.resolve("nope")), "non-existent should not be deletable");
+
+        // --- Test size/count ---
+        System.out.println("[test] --- size/count tests ---");
+        long logSize = LogsCleaner.getLogsSize(logsDir);
+        int logCount = LogsCleaner.countLogFiles(logsDir);
+        System.out.println("[test] logSize=" + logSize + " logCount=" + logCount);
+        check(logCount == 7, "should count 7 deletable log files (6 archives + 1 debug archive)");
+        check(logSize > 0, "log size should be > 0");
+
+        // --- Test cleanLogs with keepRecent=5 ---
+        System.out.println("[test] --- cleanLogs keepRecent=5 test ---");
+        // Recreate archives (previous test didn't delete them, but let's verify state)
+        check(logCount == 7, "should still have 7 archives before clean");
+        LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(logsDir, 5);
+        System.out.println("[test] keepRecent=5: deleted=" + r.filesDeleted + " freed=" + r.bytesFreed
+                + " failures=" + r.failures + " skipped=" + r.filesSkipped);
+        // 7 deletable logs total, keep 5 newest → delete 2 oldest
+        // Oldest is debugArchive (mtime=500), then archives[0] (mtime=1000)
+        check(r.filesDeleted == 2, "should delete 2 oldest logs (keep 5 of 7)");
+        check(r.failures == 0, "should have 0 failures");
+        check(r.filesSkipped == 2, "should skip 2 non-log files (.lck + README)");
+        // Active logs must still exist
+        check(Files.exists(latestLog), "latest.log must NOT be deleted");
+        check(Files.exists(debugLog), "debug.log must NOT be deleted");
+        // Non-log files must still exist
+        check(Files.exists(lockFile), ".lck file must NOT be deleted");
+        check(Files.exists(readmeFile), "README.txt must NOT be deleted");
+        // Newest 5 archives should be kept (archives[1] through archives[5])
+        // debugArchive (mtime=500) and archives[0] (mtime=1000) should be deleted
+        check(!Files.exists(debugArchive), "oldest debug archive should be deleted");
+        check(!Files.exists(archives[0]), "oldest archive should be deleted");
+        check(Files.exists(archives[1]), "archive[1] should be KEPT (2nd newest..6th newest kept)");
+        check(Files.exists(archives[5]), "newest archive should be KEPT");
+        // Verify remaining count
+        check(LogsCleaner.countLogFiles(logsDir) == 5, "should have 5 deletable logs remaining");
+
+        // --- Test cleanAllLogs (keepRecent=0) ---
+        System.out.println("[test] --- cleanAllLogs test ---");
+        LogsCleaner.CleanResult r2 = LogsCleaner.cleanAllLogs(logsDir);
+        System.out.println("[test] cleanAll: deleted=" + r2.filesDeleted + " freed=" + r2.bytesFreed
+                + " skipped=" + r2.filesSkipped);
+        check(r2.filesDeleted == 5, "should delete all 5 remaining archives");
+        check(r2.filesSkipped == 2, "should skip 2 non-log files");
+        check(Files.exists(latestLog), "latest.log must NOT be deleted");
+        check(Files.exists(debugLog), "debug.log must NOT be deleted");
+        check(Files.exists(lockFile), ".lck file must NOT be deleted");
+        check(Files.exists(readmeFile), "README.txt must NOT be deleted");
+        check(LogsCleaner.countLogFiles(logsDir) == 0, "should have 0 deletable logs after cleanAll");
+
+        // --- Test missing folder ---
+        System.out.println("[test] --- missing folder test ---");
+        LogsCleaner.CleanResult r3 = LogsCleaner.cleanLogs(temp.resolve("nope"), 5);
+        check(r3.filesDeleted == 0, "missing folder should be a no-op");
+        LogsCleaner.CleanResult r4 = LogsCleaner.cleanAllLogs(temp.resolve("nope"));
+        check(r4.filesDeleted == 0, "missing folder cleanAll should be a no-op");
+
+        // --- Test keepRecent=0 on empty folder ---
+        System.out.println("[test] --- empty folder test ---");
+        Path emptyDir = temp.resolve("empty-logs");
+        Files.createDirectories(emptyDir);
+        LogsCleaner.CleanResult r5 = LogsCleaner.cleanLogs(emptyDir, 5);
+        check(r5.filesDeleted == 0, "empty folder should delete 0");
+
+        // --- Test keepRecent > file count ---
+        System.out.println("[test] --- keepRecent > count test ---");
+        Path logs2 = temp.resolve("logs2");
+        Files.createDirectories(logs2);
+        Path a1 = logs2.resolve("2024-02-01-1.log.gz");
+        Files.write(a1, "log".getBytes(StandardCharsets.UTF_8));
+        Path a2 = logs2.resolve("2024-02-02-1.log.gz");
+        Files.write(a2, "log".getBytes(StandardCharsets.UTF_8));
+        Files.setLastModifiedTime(a1, FileTime.from(1000L, TimeUnit.SECONDS));
+        Files.setLastModifiedTime(a2, FileTime.from(2000L, TimeUnit.SECONDS));
+        LogsCleaner.CleanResult r6 = LogsCleaner.cleanLogs(logs2, 10);
+        check(r6.filesDeleted == 0, "keepRecent=10 on 2 files should delete 0");
+        check(Files.exists(a1), "a1 should be KEPT");
+        check(Files.exists(a2), "a2 should be KEPT");
+
+        // Cleanup
+        Files.deleteIfExists(latestLog);
+        Files.deleteIfExists(debugLog);
+        Files.deleteIfExists(lockFile);
+        Files.deleteIfExists(readmeFile);
+        for (int i = 1; i < 6; i++) Files.deleteIfExists(archives[i]);
+        Files.deleteIfExists(logsDir);
+        Files.deleteIfExists(a1);
+        Files.deleteIfExists(a2);
+        Files.deleteIfExists(logs2);
+        Files.deleteIfExists(emptyDir);
+        Files.deleteIfExists(temp);
+        System.out.println("[test] LogsCleaner tests passed.");
+    }
+
+    // ==================================================================
+    // Helpers
+    // ==================================================================
 
     /** Creates a fake SpeedrunIGT record file with a random UUID name and the given size. */
     private static Path writeRecord(Path dir, int size) throws IOException {
