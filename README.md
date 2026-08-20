@@ -28,13 +28,17 @@ SpeedrunIGT 会在 `%USERPROFILE%\speedrunigt\records` 文件夹里堆积大量�
 
 ## Build / 构建
 
-Requires JDK 21. Run:
+Requires JDK 17 or newer. Run:
 
 ```bash
 bash build.sh
 ```
 
-The jar is produced at `out/speedrunigt-records-cleaner-1.0.0.jar`. The build uses compile-only API stubs (`stubs/`) so the plugin jar stays small and references Jingle's own classes at runtime.
+The jar is produced at `out/speedrunigt-records-cleaner-1.0.0.jar`. The build uses compile-only API stubs (`stubs/`) so the plugin jar stays small and references Jingle's own classes at runtime. The plugin is compiled with `--release 17` and runs on Java 17–21 (declared via `minimumJava: 17` in `jingle.plugin.json`).
+
+## Requirements / 环境要求
+
+- Jingle running on **Java 17, 18, 19, 20 or 21** (Java 21 recommended).
 
 ## License / 许可
 

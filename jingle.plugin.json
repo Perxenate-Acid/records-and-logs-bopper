@@ -3,5 +3,5 @@
   "id": "speedrunigt-records-cleaner",
   "version": "1.0.0",
   "initializer": "com.speedrunigtcleaner.SpeedrunIGTCleanerPlugin::initialize",
-  "minimumJava": 8
+  "minimumJava": 17
 }

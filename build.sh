@@ -28,11 +28,11 @@ make_argfile() {
 
 echo "[1/4] Compiling API stubs (compile-only, never packaged)..."
 make_argfile "$ROOT/stubs" "$OUT/stub-sources.txt"
-"$JDK_BIN/javac" -encoding UTF-8 --release 8 -d "$(w "$OUT/stub-classes")" @"$(w "$OUT/stub-sources.txt")"
+"$JDK_BIN/javac" -encoding UTF-8 --release 17 -d "$(w "$OUT/stub-classes")" @"$(w "$OUT/stub-sources.txt")"
 
 echo "[2/4] Compiling plugin sources against stubs..."
 make_argfile "$ROOT/src" "$OUT/main-sources.txt"
-"$JDK_BIN/javac" -encoding UTF-8 --release 8 -cp "$(w "$OUT/stub-classes")" -d "$(w "$OUT/classes")" @"$(w "$OUT/main-sources.txt")"
+"$JDK_BIN/javac" -encoding UTF-8 --release 17 -cp "$(w "$OUT/stub-classes")" -d "$(w "$OUT/classes")" @"$(w "$OUT/main-sources.txt")"
 
 echo "[3/4] Packaging jar (jingle.plugin.json + plugin classes only)..."
 cp "$ROOT/jingle.plugin.json" "$OUT/classes/"
@@ -40,7 +40,7 @@ cp "$ROOT/jingle.plugin.json" "$OUT/classes/"
 
 echo "[4/4] Running standalone logic tests..."
 make_argfile "$ROOT/test" "$OUT/test-sources.txt"
-"$JDK_BIN/javac" -encoding UTF-8 --release 8 -cp "$(w "$OUT/classes")" -d "$(w "$OUT/test-classes")" @"$(w "$OUT/test-sources.txt")"
+"$JDK_BIN/javac" -encoding UTF-8 --release 17 -cp "$(w "$OUT/classes")" -d "$(w "$OUT/test-classes")" @"$(w "$OUT/test-sources.txt")"
 "$JDK_BIN/java" -cp "$(w "$OUT/classes");$(w "$OUT/test-classes")" TestMain
 
 echo ""
