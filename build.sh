@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Build script for the SpeedrunIGT Records Cleaner Jingle plugin.
-# Produces: out/speedrunigt-records-cleaner-1.0.0.jar
+# Build script for the Records & Logs Bopper Jingle plugin.
+# Produces: out/records-and-logs-bopper-1.0.0.jar
 #
 # NOTE: every path passed to the native Windows JDK tools (javac/jar/java)
 # must be converted with cygpath -w, because MSYS2 does not convert
@@ -36,7 +36,7 @@ make_argfile "$ROOT/src" "$OUT/main-sources.txt"
 
 echo "[3/4] Packaging jar (jingle.plugin.json + plugin classes only)..."
 cp "$ROOT/jingle.plugin.json" "$OUT/classes/"
-(cd "$OUT/classes" && "$JDK_BIN/jar" cf "$(w "$OUT/speedrunigt-records-cleaner-1.0.0.jar")" .)
+(cd "$OUT/classes" && "$JDK_BIN/jar" cf "$(w "$OUT/records-and-logs-bopper-1.0.0.jar")" .)
 
 echo "[4/4] Running standalone logic tests..."
 make_argfile "$ROOT/test" "$OUT/test-sources.txt"
@@ -44,4 +44,4 @@ make_argfile "$ROOT/test" "$OUT/test-sources.txt"
 "$JDK_BIN/java" -cp "$(w "$OUT/classes");$(w "$OUT/test-classes")" TestMain
 
 echo ""
-echo "Build OK: $OUT/speedrunigt-records-cleaner-1.0.0.jar"
+echo "Build OK: $OUT/records-and-logs-bopper-1.0.0.jar"

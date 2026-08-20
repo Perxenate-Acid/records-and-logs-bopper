@@ -1,6 +1,6 @@
 {
-  "name": "SpeedrunIGT Records Cleaner",
-  "id": "speedrunigt-records-cleaner",
+  "name": "Records & Logs Bopper",
+  "id": "records-and-logs-bopper",
   "version": "1.0.0",
   "initializer": "com.speedrunigtcleaner.SpeedrunIGTCleanerPlugin::initialize",
   "minimumJava": 17
