@@ -44,7 +44,9 @@ public final class SpeedrunIGTCleanerPlugin {
 
     private static final String TAB_NAME = "Records & Logs Bopper";
     private static final String QUICK_ACTION_TEXT = "Clean Records";
+    private static final String QUICK_ACTION_LOGS_TEXT = "Clean Logs";
     private static final String HOTKEY_ACTION = "Clean Records";
+    private static final String HOTKEY_LOGS_ACTION = "Clean Logs";
 
     private static final String CONFIG_FILE_NAME = "records-and-logs-bopper.properties";
     private static final String PROP_AUTO_CLEAN = "autoCleanOnStartup";
@@ -98,7 +100,9 @@ public final class SpeedrunIGTCleanerPlugin {
         JingleGUI.addPluginTab(TAB_NAME, mainPanel, SpeedrunIGTCleanerPlugin::refreshAll);
 
         JingleGUI.get().registerQuickActionButton(2000, SpeedrunIGTCleanerPlugin::makeQuickActionButton);
+        JingleGUI.get().registerQuickActionButton(2001, SpeedrunIGTCleanerPlugin::makeQuickActionLogsButton);
         PluginHotkeys.addHotkeyAction(HOTKEY_ACTION, SpeedrunIGTCleanerPlugin::cleanAndReport);
+        PluginHotkeys.addHotkeyAction(HOTKEY_LOGS_ACTION, SpeedrunIGTCleanerPlugin::cleanAllLogsAndReport);
 
         if (autoCleanEnabled) {
             Thread t = new Thread(() -> {
@@ -367,7 +371,7 @@ public final class SpeedrunIGTCleanerPlugin {
         manualHint.setFont(manualHint.getFont().deriveFont(11f));
         panel.add(manualHint, gbc);
 
-        JLabel footnote = new JLabel("\u63d0\u793a\uff1a\u53ef\u5728 \"Hotkeys\" \u6807\u7b7e\u9875\u628a \"" + HOTKEY_ACTION + "\" \u7ed1\u5b9a\u5230\u5feb\u6377\u952e\u3002");
+        JLabel footnote = new JLabel("\u63d0\u793a\uff1a\u53ef\u5728 \"Hotkeys\" \u6807\u7b7e\u9875\u628a \"" + HOTKEY_ACTION + "\" \u548c \"" + HOTKEY_LOGS_ACTION + "\" \u7ed1\u5b9a\u5230\u5feb\u6377\u952e\u3002");
         footnote.setFont(footnote.getFont().deriveFont(11f));
         panel.add(footnote, gbc);
 
@@ -386,6 +390,15 @@ public final class SpeedrunIGTCleanerPlugin {
                 SpeedrunIGTCleanerPlugin::cleanAndReport,
                 () -> JingleGUI.get().openTab(mainPanel),
                 "Deletes SpeedrunIGT record files in ~/speedrunigt/records (keeps the folder and non-record files). Right-click for settings.",
+                true);
+    }
+
+    private static JButton makeQuickActionLogsButton() {
+        return JingleGUI.makeButton(
+                QUICK_ACTION_LOGS_TEXT,
+                SpeedrunIGTCleanerPlugin::cleanAllLogsAndReport,
+                () -> JingleGUI.get().openTab(mainPanel),
+                "Deletes old MC log files (*.log.gz) in MultiMC/Prism instances, preserving latest.log. Right-click for settings.",
                 true);
     }
 
