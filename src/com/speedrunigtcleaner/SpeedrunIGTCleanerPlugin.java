@@ -14,6 +14,8 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.Desktop;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -208,6 +210,21 @@ public final class SpeedrunIGTCleanerPlugin {
         recordsKeepRow.add(recordsKeepField);
         panel.add(recordsKeepRow, gbc);
 
+        addLiveTextSync(recordsKeepField, () -> {
+            try {
+                int v = Integer.parseInt(recordsKeepField.getText().trim());
+                if (v < 0) {
+                    v = 0;
+                }
+                keepRecentManualCheckbox.setText(
+                        "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
+                keepRecentAutoCheckbox.setText(
+                        "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
+            } catch (NumberFormatException ignored) {
+                // keep previous label until input becomes valid
+            }
+        });
+
         Runnable applyRecordsKeep = () -> {
             try {
                 int v = Integer.parseInt(recordsKeepField.getText().trim());
@@ -351,6 +368,21 @@ public final class SpeedrunIGTCleanerPlugin {
         keepRecentRow.add(keepRecentField);
         panel.add(keepRecentRow, gbc);
 
+        addLiveTextSync(keepRecentField, () -> {
+            try {
+                int v = Integer.parseInt(keepRecentField.getText().trim());
+                if (v < 0) {
+                    v = 0;
+                }
+                if (logsKeepRecentManualCheckbox != null) {
+                    logsKeepRecentManualCheckbox.setText(
+                            "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
+                }
+            } catch (NumberFormatException ignored) {
+                // keep previous label until input becomes valid
+            }
+        });
+
         JLabel logsHint = new JLabel("\u81ea\u52a8\u6e05\u7406\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff0c\u5220\u9664\u5176\u4f59\u65e7\u65e5\u5fd7\uff1b\u624b\u52a8\u6e05\u7406\u53ef\u5728\u4e0b\u65b9\u9009\u62e9\u662f\u5426\u4fdd\u7559\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
         logsHint.setFont(logsHint.getFont().deriveFont(11f));
         panel.add(logsHint, gbc);
@@ -431,6 +463,26 @@ public final class SpeedrunIGTCleanerPlugin {
         updateStatusLabel();
         refreshLogsStatus();
         return panel;
+    }
+
+    /** Re-runs the given sync action whenever the text field's content changes (live typing). */
+    private static void addLiveTextSync(JTextField field, Runnable onTextChanged) {
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                onTextChanged.run();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                onTextChanged.run();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                onTextChanged.run();
+            }
+        });
     }
 
     private static JButton makeQuickActionButton() {
