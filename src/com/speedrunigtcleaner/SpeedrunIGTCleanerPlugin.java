@@ -16,6 +16,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -64,7 +65,7 @@ public final class SpeedrunIGTCleanerPlugin {
 
     private static final boolean DEFAULT_AUTO_CLEAN = false;
     private static final double DEFAULT_THRESHOLD_MB = 50.0;
-    private static final double MIN_THRESHOLD_MB = 1.0;
+    private static final double MIN_THRESHOLD_MB = 0.0;
     private static final int DEFAULT_RECORDS_KEEP_RECENT = 10;
 
     private static final boolean DEFAULT_LOGS_AUTO_CLEAN = false;
@@ -73,6 +74,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final boolean DEFAULT_LOGS_KEEP_RECENT_MANUAL = true;
 
     private static final DecimalFormat MB_FORMAT = new DecimalFormat("0.0");
+    private static final Color ERROR_COLOR = new Color(0xC62828);
 
     private static Path configPath;
     private static JPanel mainPanel;
@@ -208,39 +210,39 @@ public final class SpeedrunIGTCleanerPlugin {
         recordsKeepRow.add(new JLabel("\u4fdd\u7559\u8bb0\u5f55\u6570\u91cf:"));
         JTextField recordsKeepField = new JTextField(String.valueOf(recordsKeepRecent), 8);
         recordsKeepRow.add(recordsKeepField);
+        JLabel recordsKeepErr = makeErrorLabel();
+        recordsKeepRow.add(recordsKeepErr);
         panel.add(recordsKeepRow, gbc);
 
         addLiveTextSync(recordsKeepField, () -> {
-            try {
+            String err = validateCount(recordsKeepField.getText());
+            if (err == null) {
                 int v = Integer.parseInt(recordsKeepField.getText().trim());
-                if (v < 0) {
-                    v = 0;
-                }
                 keepRecentManualCheckbox.setText(
                         "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
                 keepRecentAutoCheckbox.setText(
                         "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
-            } catch (NumberFormatException ignored) {
-                // keep previous label until input becomes valid
+                setError(recordsKeepErr, null);
+            } else {
+                setError(recordsKeepErr, err);
             }
         });
 
         Runnable applyRecordsKeep = () -> {
-            try {
-                int v = Integer.parseInt(recordsKeepField.getText().trim());
-                if (v < 0) {
-                    v = 0;
-                }
-                recordsKeepRecent = v;
-                recordsKeepField.setText(String.valueOf(v));
-                keepRecentManualCheckbox.setText(
-                        "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
-                keepRecentAutoCheckbox.setText(
-                        "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
-                saveConfig();
-            } catch (NumberFormatException ex) {
-                recordsKeepField.setText(String.valueOf(recordsKeepRecent));
+            String err = validateCount(recordsKeepField.getText());
+            if (err != null) {
+                showFieldError(recordsKeepField, recordsKeepErr, err, String.valueOf(recordsKeepRecent));
+                return;
             }
+            int v = Integer.parseInt(recordsKeepField.getText().trim());
+            recordsKeepRecent = v;
+            recordsKeepField.setText(String.valueOf(v));
+            keepRecentManualCheckbox.setText(
+                    "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
+            keepRecentAutoCheckbox.setText(
+                    "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
+            setError(recordsKeepErr, null);
+            saveConfig();
         };
         recordsKeepField.addActionListener(e -> applyRecordsKeep.run());
         recordsKeepField.addFocusListener(new FocusAdapter() {
@@ -254,21 +256,22 @@ public final class SpeedrunIGTCleanerPlugin {
         thresholdRow.add(new JLabel("\u8bb0\u5f55\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
         JTextField thresholdField = new JTextField(String.valueOf((long) thresholdMB), 8);
         thresholdRow.add(thresholdField);
+        JLabel thresholdErr = makeErrorLabel();
+        thresholdRow.add(thresholdErr);
         panel.add(thresholdRow, gbc);
 
         Runnable applyThreshold = () -> {
-            try {
-                double v = Double.parseDouble(thresholdField.getText().trim());
-                if (v < MIN_THRESHOLD_MB) {
-                    v = MIN_THRESHOLD_MB;
-                }
-                thresholdMB = v;
-                thresholdField.setText(String.valueOf((long) v));
-                saveConfig();
-                updateStatusLabel();
-            } catch (NumberFormatException ex) {
-                thresholdField.setText(String.valueOf((long) thresholdMB));
+            String err = validateThreshold(thresholdField.getText());
+            if (err != null) {
+                showFieldError(thresholdField, thresholdErr, err, formatMb(thresholdMB));
+                return;
             }
+            double v = Double.parseDouble(thresholdField.getText().trim());
+            thresholdMB = v;
+            thresholdField.setText(formatMb(v));
+            setError(thresholdErr, null);
+            saveConfig();
+            updateStatusLabel();
         };
         thresholdField.addActionListener(e -> applyThreshold.run());
         thresholdField.addFocusListener(new FocusAdapter() {
@@ -360,26 +363,29 @@ public final class SpeedrunIGTCleanerPlugin {
         logsThresholdRow.add(new JLabel("\u65e5\u5fd7\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
         JTextField logsThresholdField = new JTextField(String.valueOf((long) logsThresholdMB), 8);
         logsThresholdRow.add(logsThresholdField);
+        JLabel logsThresholdErr = makeErrorLabel();
+        logsThresholdRow.add(logsThresholdErr);
         panel.add(logsThresholdRow, gbc);
 
         JPanel keepRecentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         keepRecentRow.add(new JLabel("\u4fdd\u7559\u6700\u8fd1\u65e5\u5fd7\u6570\u91cf:"));
         JTextField keepRecentField = new JTextField(String.valueOf(logsKeepRecent), 8);
         keepRecentRow.add(keepRecentField);
+        JLabel logsKeepErr = makeErrorLabel();
+        keepRecentRow.add(logsKeepErr);
         panel.add(keepRecentRow, gbc);
 
         addLiveTextSync(keepRecentField, () -> {
-            try {
+            String err = validateCount(keepRecentField.getText());
+            if (err == null) {
                 int v = Integer.parseInt(keepRecentField.getText().trim());
-                if (v < 0) {
-                    v = 0;
-                }
                 if (logsKeepRecentManualCheckbox != null) {
                     logsKeepRecentManualCheckbox.setText(
                             "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
                 }
-            } catch (NumberFormatException ignored) {
-                // keep previous label until input becomes valid
+                setError(logsKeepErr, null);
+            } else {
+                setError(logsKeepErr, err);
             }
         });
 
@@ -388,17 +394,16 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(logsHint, gbc);
 
         Runnable applyLogsThreshold = () -> {
-            try {
-                double v = Double.parseDouble(logsThresholdField.getText().trim());
-                if (v < MIN_THRESHOLD_MB) {
-                    v = MIN_THRESHOLD_MB;
-                }
-                logsThresholdMB = v;
-                logsThresholdField.setText(String.valueOf((long) v));
-                saveConfig();
-            } catch (NumberFormatException ex) {
-                logsThresholdField.setText(String.valueOf((long) logsThresholdMB));
+            String err = validateThreshold(logsThresholdField.getText());
+            if (err != null) {
+                showFieldError(logsThresholdField, logsThresholdErr, err, formatMb(logsThresholdMB));
+                return;
             }
+            double v = Double.parseDouble(logsThresholdField.getText().trim());
+            logsThresholdMB = v;
+            logsThresholdField.setText(formatMb(v));
+            setError(logsThresholdErr, null);
+            saveConfig();
         };
         logsThresholdField.addActionListener(e -> applyLogsThreshold.run());
         logsThresholdField.addFocusListener(new FocusAdapter() {
@@ -409,21 +414,20 @@ public final class SpeedrunIGTCleanerPlugin {
         });
 
         Runnable applyKeepRecent = () -> {
-            try {
-                int v = Integer.parseInt(keepRecentField.getText().trim());
-                if (v < 0) {
-                    v = 0;
-                }
-                logsKeepRecent = v;
-                keepRecentField.setText(String.valueOf(v));
-                if (logsKeepRecentManualCheckbox != null) {
-                    logsKeepRecentManualCheckbox.setText(
-                            "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7");
-                }
-                saveConfig();
-            } catch (NumberFormatException ex) {
-                keepRecentField.setText(String.valueOf(logsKeepRecent));
+            String err = validateCount(keepRecentField.getText());
+            if (err != null) {
+                showFieldError(keepRecentField, logsKeepErr, err, String.valueOf(logsKeepRecent));
+                return;
             }
+            int v = Integer.parseInt(keepRecentField.getText().trim());
+            logsKeepRecent = v;
+            keepRecentField.setText(String.valueOf(v));
+            if (logsKeepRecentManualCheckbox != null) {
+                logsKeepRecentManualCheckbox.setText(
+                        "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7");
+            }
+            setError(logsKeepErr, null);
+            saveConfig();
         };
         keepRecentField.addActionListener(e -> applyKeepRecent.run());
         keepRecentField.addFocusListener(new FocusAdapter() {
@@ -483,6 +487,105 @@ public final class SpeedrunIGTCleanerPlugin {
                 onTextChanged.run();
             }
         });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Input validation & inline error display                            */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Validates a "keep count" text field. Only non-negative integers (0 or positive
+     * whole numbers) are accepted. Negative numbers, decimals, letters and any
+     * expression-like input are rejected. Returns an error description, or null when
+     * the input is valid.
+     */
+    private static String validateCount(String text) {
+        String t = text.trim();
+        if (t.isEmpty()) {
+            return "\u4e0d\u80fd\u4e3a\u7a7a\uff0c\u8bf7\u8f93\u5165\u975e\u8d1f\u6574\u6570\uff080 \u6216\u6b63\u6574\u6570\uff09";
+        }
+        if (!t.matches("\\d+")) {
+            if (t.startsWith("-")) {
+                return "\u4e0d\u80fd\u4e3a\u8d1f\u6570\uff0c\u4ec5\u652f\u6301 0 \u6216\u6b63\u6574\u6570";
+            }
+            return "\u4ec5\u652f\u6301\u975e\u8d1f\u6574\u6570\uff080/1/2...\uff09\uff0c\u4e0d\u652f\u6301\u5c0f\u6570\u3001\u5b57\u6bcd\u6216\u8868\u8fbe\u5f0f";
+        }
+        try {
+            Integer.parseInt(t);
+            return null;
+        } catch (NumberFormatException ex) {
+            return "\u6570\u5b57\u592a\u5927\uff0c\u6700\u5927\u4ec5\u652f\u6301 " + Integer.MAX_VALUE;
+        }
+    }
+
+    /**
+     * Validates an "MB threshold" text field. Only non-negative decimal numbers
+     * (e.g. 0, 50, 0.5) are accepted. Negative numbers, letters and expressions are
+     * rejected. Values that would overflow double/long range are also rejected.
+     * Returns an error description, or null when the input is valid.
+     */
+    private static String validateThreshold(String text) {
+        String t = text.trim();
+        if (t.isEmpty()) {
+            return "\u4e0d\u80fd\u4e3a\u7a7a\uff0c\u8bf7\u8f93\u5165\u975e\u8d1f\u6570\u5b57\uff08\u5982 0\u300150\u30010.5\uff09";
+        }
+        if (!t.matches("\\d+(\\.\\d+)?")) {
+            if (t.startsWith("-")) {
+                return "\u4e0d\u80fd\u4e3a\u8d1f\u6570\uff0c\u9608\u503c\u5fc5\u987b\u5927\u4e8e\u7b49\u4e8e 0 MB";
+            }
+            return "\u4ec5\u652f\u6301\u975e\u8d1f\u6570\u5b57\uff08\u5982 0\u300150\u30010.5\uff09\uff0c\u4e0d\u652f\u6301\u5b57\u6bcd\u6216\u8868\u8fbe\u5f0f";
+        }
+        try {
+            double v = Double.parseDouble(t);
+            if (Double.isNaN(v) || Double.isInfinite(v)) {
+                return "\u6570\u5b57\u592a\u5927\uff0c\u8d85\u51fa\u53ef\u5904\u7406\u8303\u56f4";
+            }
+            // Ensure (long)(v * 1024 * 1024) used by the byte comparison does not overflow.
+            if (v > Long.MAX_VALUE / (1024.0 * 1024.0)) {
+                return "\u6570\u5b57\u592a\u5927\uff0c\u8d85\u51fa\u53ef\u5904\u7406\u8303\u56f4";
+            }
+            return null;
+        } catch (NumberFormatException ex) {
+            return "\u6570\u5b57\u683c\u5f0f\u4e0d\u5408\u6cd5";
+        }
+    }
+
+    /** Creates a red inline error label, initially blank (hidden). */
+    private static JLabel makeErrorLabel() {
+        JLabel label = new JLabel(" ");
+        label.setForeground(ERROR_COLOR);
+        return label;
+    }
+
+    /** Shows (non-null message) or clears (null message) the inline error label. */
+    private static void setError(JLabel label, String message) {
+        if (label == null) {
+            return;
+        }
+        if (message == null) {
+            label.setText(" ");
+            label.setToolTipText(null);
+        } else {
+            label.setText(message);
+            label.setToolTipText(message);
+        }
+    }
+
+    /**
+     * Reverts the field to its last valid value, clears the inline error, shows an
+     * error dialog describing the problem and returns focus to the field. Never
+     * throws — used to report invalid input without crashing the plugin.
+     */
+    private static void showFieldError(JTextField field, JLabel errLabel, String message, String revertText) {
+        field.setText(revertText);
+        setError(errLabel, null);
+        JOptionPane.showMessageDialog(JingleGUI.get(), message, TAB_NAME, JOptionPane.ERROR_MESSAGE);
+        field.requestFocusInWindow();
+    }
+
+    /** Formats an MB value for display: whole numbers without decimals, otherwise as-is. */
+    private static String formatMb(double v) {
+        return (v == Math.floor(v)) ? String.valueOf((long) v) : String.valueOf(v);
     }
 
     private static JButton makeQuickActionButton() {
