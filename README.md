@@ -9,25 +9,28 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 
 ## Features
 
-The plugin provides two cleaners: one for speedrun records, one for Minecraft logs.
+Two cleaners — one for speedrun records and one for MC logs. Files you added yourself and files that are currently being written are never affected.
 
 ### Records cleaner
 
-SpeedrunIGT saves one file per run in `%USERPROFILE%\speedrunigt\records`, and the files accumulate quickly. The cleaner deletes only genuine SpeedrunIGT records — both the filename format and the file content are verified — so files you placed in the folder yourself are left untouched.
+Deletes the records SpeedrunIGT creates in `%USERPROFILE%\speedrunigt\records`.
 
-Manual cleaning is done via the "Clean Records Now" button (Jingle asks for confirmation first); automatic cleaning is also available: while Jingle is running, the plugin checks the folder periodically (about once a minute) and cleans automatically once its size exceeds the threshold (50 MB by default). Automatic cleaning is off by default. Either way, the most recent records can be kept instead of deleting everything — the number to keep is configurable, 10 by default. The tab shows the current folder size and file count, and provides a button that opens the folder.
+- Manual cleaning via button
+- Automatic cleaning when the folder size exceeds the threshold (50 MB by default); off by default
+- Optionally keep the most recent records
 
-### MC logs cleaner
+### MC logs cleaner (MultiMC / Prism launchers only)
 
-Old Minecraft logs accumulate in the `.minecraft/logs` folder of every MultiMC / Prism instance. The cleaner processes all instances at once and deletes only the log archives Minecraft itself creates (such as `2026-08-21-1.log.gz` or `debug-1.log.gz`). `latest.log` and `debug.log` are always kept, and so is anything you placed in the folder yourself.
+Deletes logs from all instances at once.
 
-Manual cleaning keeps the 5 most recent logs per instance by default (the number is configurable, or untick the option to delete them all). Automatic cleaning always keeps the recent logs and, while Jingle is running, runs automatically once the total log size exceeds its own threshold (also 50 MB by default, also off by default). The plugin detects your MultiMC / Prism Launcher folder automatically; if the detection is incorrect, the folder can be selected manually via Browse. Each instance's log size and file count are shown in the tab.
+- Automatically detects the MultiMC / Prism Launcher folder; can also be set manually
+- Manual cleaning via button
+- Keeps the 5 most recent logs per instance by default; the number is configurable
+- Automatic cleaning when the total log size exceeds the threshold (50 MB by default); off by default
 
 ### Shortcuts
 
-In addition to the buttons in the tab, the Jingle main window provides `Clean Records` and `Clean Logs` buttons, and both actions can be bound to hotkeys in Jingle's Hotkeys page.
-
-If a file is locked by a running game it cannot be deleted — the plugin will notify you, and you can clean again after closing the game.
+The Jingle main window provides `Clean Records` and `Clean Logs` buttons for quick cleaning, and hotkeys can be assigned to both actions.
 
 ## Installation & Uninstallation
 
