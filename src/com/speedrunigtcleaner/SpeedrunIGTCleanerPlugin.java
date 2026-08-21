@@ -260,6 +260,11 @@ public final class SpeedrunIGTCleanerPlugin {
         thresholdRow.add(thresholdErr);
         panel.add(thresholdRow, gbc);
 
+        addLiveTextSync(thresholdField, () -> {
+            String err = validateThreshold(thresholdField.getText());
+            setError(thresholdErr, err);
+        });
+
         Runnable applyThreshold = () -> {
             String err = validateThreshold(thresholdField.getText());
             if (err != null) {
@@ -366,6 +371,11 @@ public final class SpeedrunIGTCleanerPlugin {
         JLabel logsThresholdErr = makeErrorLabel();
         logsThresholdRow.add(logsThresholdErr);
         panel.add(logsThresholdRow, gbc);
+
+        addLiveTextSync(logsThresholdField, () -> {
+            String err = validateThreshold(logsThresholdField.getText());
+            setError(logsThresholdErr, err);
+        });
 
         JPanel keepRecentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         keepRecentRow.add(new JLabel("\u4fdd\u7559\u6700\u8fd1\u65e5\u5fd7\u6570\u91cf:"));
