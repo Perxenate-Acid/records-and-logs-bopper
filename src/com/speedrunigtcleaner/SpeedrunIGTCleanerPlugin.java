@@ -53,6 +53,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final String PROP_THRESHOLD_MB = "thresholdMB";
     private static final String PROP_KEEP_RECENT_MANUAL = "keepRecentManual";
     private static final String PROP_KEEP_RECENT_AUTO = "keepRecentAuto";
+    private static final String PROP_RECORDS_KEEP_RECENT = "recordsKeepRecent";
     private static final String PROP_LOGS_AUTO_CLEAN = "logsAutoCleanOnStartup";
     private static final String PROP_LOGS_THRESHOLD_MB = "logsThresholdMB";
     private static final String PROP_LOGS_KEEP_RECENT = "logsKeepRecent";
@@ -62,7 +63,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final boolean DEFAULT_AUTO_CLEAN = false;
     private static final double DEFAULT_THRESHOLD_MB = 50.0;
     private static final double MIN_THRESHOLD_MB = 1.0;
-    private static final int KEEP_RECENT_COUNT = 10;
+    private static final int DEFAULT_RECORDS_KEEP_RECENT = 10;
 
     private static final boolean DEFAULT_LOGS_AUTO_CLEAN = false;
     private static final double DEFAULT_LOGS_THRESHOLD_MB = 50.0;
@@ -82,6 +83,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static double thresholdMB = DEFAULT_THRESHOLD_MB;
     private static boolean keepRecentManual = false;
     private static boolean keepRecentAuto = false;
+    private static int recordsKeepRecent = DEFAULT_RECORDS_KEEP_RECENT;
 
     private static boolean logsAutoCleanEnabled = DEFAULT_LOGS_AUTO_CLEAN;
     private static double logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
@@ -169,7 +171,7 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(statusLabel, gbc);
 
         JCheckBox keepRecentManualCheckbox = new JCheckBox(
-                "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + KEEP_RECENT_COUNT + " \u4e2a\u8bb0\u5f55", keepRecentManual);
+                "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentManual);
         keepRecentManualCheckbox.addActionListener(e -> {
             keepRecentManual = keepRecentManualCheckbox.isSelected();
             saveConfig();
@@ -193,12 +195,43 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(autoCleanCheckbox, gbc);
 
         JCheckBox keepRecentAutoCheckbox = new JCheckBox(
-                "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + KEEP_RECENT_COUNT + " \u4e2a\u8bb0\u5f55", keepRecentAuto);
+                "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentAuto);
         keepRecentAutoCheckbox.addActionListener(e -> {
             keepRecentAuto = keepRecentAutoCheckbox.isSelected();
             saveConfig();
         });
         panel.add(keepRecentAutoCheckbox, gbc);
+
+        JPanel recordsKeepRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        recordsKeepRow.add(new JLabel("\u4fdd\u7559\u8bb0\u5f55\u6570\u91cf:"));
+        JTextField recordsKeepField = new JTextField(String.valueOf(recordsKeepRecent), 8);
+        recordsKeepRow.add(recordsKeepField);
+        panel.add(recordsKeepRow, gbc);
+
+        Runnable applyRecordsKeep = () -> {
+            try {
+                int v = Integer.parseInt(recordsKeepField.getText().trim());
+                if (v < 0) {
+                    v = 0;
+                }
+                recordsKeepRecent = v;
+                recordsKeepField.setText(String.valueOf(v));
+                keepRecentManualCheckbox.setText(
+                        "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
+                keepRecentAutoCheckbox.setText(
+                        "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
+                saveConfig();
+            } catch (NumberFormatException ex) {
+                recordsKeepField.setText(String.valueOf(recordsKeepRecent));
+            }
+        };
+        recordsKeepField.addActionListener(e -> applyRecordsKeep.run());
+        recordsKeepField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                applyRecordsKeep.run();
+            }
+        });
 
         JPanel thresholdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         thresholdRow.add(new JLabel("\u8bb0\u5f55\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
@@ -431,14 +464,14 @@ public final class SpeedrunIGTCleanerPlugin {
         }
         new Thread(() -> {
             try {
-                int keep = keepRecentManual ? KEEP_RECENT_COUNT : 0;
+                int keep = keepRecentManual ? recordsKeepRecent : 0;
                 RecordsCleaner.CleanResult result = RecordsCleaner.clean(getRecordsDir(), keep);
                 SwingUtilities.invokeLater(() -> {
                     updateStatusLabel();
                     String message = "\u5df2\u5220\u9664 " + result.filesDeleted + " \u4e2a\u8bb0\u5f55\u6587\u4ef6\uff0c\u91ca\u653e "
                             + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB\u3002\nrecords \u6587\u4ef6\u5939\u5df2\u4fdd\u7559\u3002";
                     if (keep > 0) {
-                        message += "\n\u5df2\u4fdd\u7559\u6700\u8fd1 " + KEEP_RECENT_COUNT + " \u4e2a\u8bb0\u5f55\u6587\u4ef6\u3002";
+                        message += "\n\u5df2\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55\u6587\u4ef6\u3002";
                     }
                     if (result.filesSkipped > 0) {
                         message += "\n\u5df2\u8df3\u8fc7 " + result.filesSkipped + " \u4e2a\u975e\u6a21\u7ec4\u6587\u4ef6\uff08\u672a\u5220\u9664\uff09\u3002";
@@ -464,12 +497,12 @@ public final class SpeedrunIGTCleanerPlugin {
             long size = RecordsCleaner.getFolderSize(dir);
             long thresholdBytes = (long) (thresholdMB * 1024 * 1024);
             if (size > thresholdBytes) {
-                int keep = keepRecentAuto ? KEEP_RECENT_COUNT : 0;
+                int keep = keepRecentAuto ? recordsKeepRecent : 0;
                 RecordsCleaner.CleanResult result = RecordsCleaner.clean(dir, keep);
                 String logMsg = TAB_NAME + ": Auto-cleaned records (" + result.filesDeleted
                         + " files, " + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB freed)";
                 if (keep > 0) {
-                    logMsg += ", kept " + KEEP_RECENT_COUNT + " most recent records";
+                    logMsg += ", kept " + recordsKeepRecent + " most recent records";
                 }
                 if (result.filesSkipped > 0) {
                     logMsg += ", skipped " + result.filesSkipped + " non-record files";
@@ -725,6 +758,7 @@ public final class SpeedrunIGTCleanerPlugin {
         thresholdMB = DEFAULT_THRESHOLD_MB;
         keepRecentManual = false;
         keepRecentAuto = false;
+        recordsKeepRecent = DEFAULT_RECORDS_KEEP_RECENT;
         logsAutoCleanEnabled = DEFAULT_LOGS_AUTO_CLEAN;
         logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
         logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
@@ -743,6 +777,11 @@ public final class SpeedrunIGTCleanerPlugin {
             }
             keepRecentManual = Boolean.parseBoolean(props.getProperty(PROP_KEEP_RECENT_MANUAL, "false"));
             keepRecentAuto = Boolean.parseBoolean(props.getProperty(PROP_KEEP_RECENT_AUTO, "false"));
+            recordsKeepRecent = Integer.parseInt(props.getProperty(
+                    PROP_RECORDS_KEEP_RECENT, String.valueOf(DEFAULT_RECORDS_KEEP_RECENT)));
+            if (recordsKeepRecent < 0) {
+                recordsKeepRecent = DEFAULT_RECORDS_KEEP_RECENT;
+            }
             logsAutoCleanEnabled = Boolean.parseBoolean(props.getProperty(PROP_LOGS_AUTO_CLEAN, String.valueOf(DEFAULT_LOGS_AUTO_CLEAN)));
             logsThresholdMB = Double.parseDouble(props.getProperty(PROP_LOGS_THRESHOLD_MB, String.valueOf(DEFAULT_LOGS_THRESHOLD_MB)));
             if (logsThresholdMB < MIN_THRESHOLD_MB) {
@@ -771,6 +810,7 @@ public final class SpeedrunIGTCleanerPlugin {
             props.setProperty(PROP_THRESHOLD_MB, String.valueOf(thresholdMB));
             props.setProperty(PROP_KEEP_RECENT_MANUAL, String.valueOf(keepRecentManual));
             props.setProperty(PROP_KEEP_RECENT_AUTO, String.valueOf(keepRecentAuto));
+            props.setProperty(PROP_RECORDS_KEEP_RECENT, String.valueOf(recordsKeepRecent));
             props.setProperty(PROP_LOGS_AUTO_CLEAN, String.valueOf(logsAutoCleanEnabled));
             props.setProperty(PROP_LOGS_THRESHOLD_MB, String.valueOf(logsThresholdMB));
             props.setProperty(PROP_LOGS_KEEP_RECENT, String.valueOf(logsKeepRecent));
