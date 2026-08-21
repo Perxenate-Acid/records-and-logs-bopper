@@ -4,18 +4,43 @@
 
 A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun records left by the [SpeedrunIGT](https://github.com/RedLime/SpeedRunIGT) mod in `%USERPROFILE%\speedrunigt\records`, **and** Minecraft log files in MultiMC / Prism Launcher instances (`.minecraft/logs`).
 
+> **This plugin only supports Jingle 1.3.0 and requires Java 17–21** (Java 21 recommended).
+> MultiMC or Prism Launcher is needed only for the MC logs cleaner; the records cleaner works standalone.
+
 ## Features
 
+### General
+
 - **Single tab** — both cleaners live in one `Records & Logs Bopper` tab under Jingle's Plugins menu.
-- **Records cleaning** — cleans `%USERPROFILE%\speedrunigt\records`, only touching files verified as SpeedrunIGT records (UUID filename + `final_igt` JSON field). User-placed files are never deleted.
-- **MC logs cleaning** — cleans `.minecraft/logs` in all MultiMC / Prism instances. `latest.log` and `debug.log` are never deleted. Only Minecraft-generated rolling log archives (e.g. `2026-08-21-1.log.gz`, `debug-1.log.gz`) are removed; user-placed files are never touched.
-- **Auto cleanup on startup** — when Jingle launches, if records or logs exceed their respective size thresholds (default 50 MB each), they are cleaned automatically. **Disabled by default**; can be toggled on independently for records and logs.
-- **Keep recent (customizable)** — when cleaning records, optionally keep the N most recent records (default 10; off by default for both manual and auto clean). When cleaning logs, keep the N most recent logs (default 5; auto clean always keeps them, manual clean can be toggled in the tab, on by default). The keep count for records and for logs can each be customized in the tab.
 - **Deletion confirmation** — a warning dialog appears before any manual deletion, requiring explicit confirmation.
 - **Quick-action buttons** — `Clean Records` and `Clean Logs` buttons on the Jingle main window.
 - **Hotkey actions** — bind `Clean Records` and `Clean Logs` to any hotkey in Jingle's Hotkeys page.
-- **MultiMC auto-detect** — automatically finds MultiMC / Prism Launcher by scanning common paths and querying running processes.
-- Settings persist in `~/.config/Jingle/records-and-logs-bopper.properties`.
+- **Settings persistence** — all settings are saved in `~/.config/Jingle/records-and-logs-bopper.properties`.
+- **Locked-file safety** — files locked by a running game cannot be deleted; they are counted as failures and reported, never causing a crash. Rerun the cleanup after closing the game.
+
+### Records cleaner
+
+- **Verified records only** — cleans `%USERPROFILE%\speedrunigt\records`, only deleting files verified as SpeedrunIGT records (UUID filename + `final_igt` JSON field). User-placed files are never deleted.
+- **Manual clean** — "Clean Records Now" button with a confirmation dialog; the result dialog shows deleted count, freed space and skipped non-record files.
+- **Keep recent records (customizable)** — optionally keep the N most recent records when cleaning (default 10; off by default for both manual and auto clean; the count is editable in the tab).
+- **Auto clean on startup** — when Jingle launches, if the records folder exceeds the size threshold (default 50 MB, customizable), it is cleaned automatically. **Off by default**; independent from the logs auto-clean.
+- **Folder tools** — "Open records folder" button and a live status line (folder size, file count, current threshold).
+
+### MC logs cleaner
+
+- **All instances at once** — cleans `.minecraft/logs` in every MultiMC / Prism instance found.
+- **Game-generated logs only** — only Minecraft rolling log archives are removed (e.g. `2026-08-21-1.log.gz`, `debug-1.log.gz`). `latest.log` and `debug.log` are never deleted; user-placed files and folders are never touched.
+- **Manual clean** — "Clean Old Logs Now" button with a confirmation dialog; optionally keeps the N most recent logs per instance (default 5, on by default, toggleable in the tab).
+- **Auto clean on startup** — when Jingle launches, if the total log size exceeds the threshold (default 50 MB, customizable), old logs are cleaned automatically, always keeping the N most recent logs per instance (default 5). **Off by default**; independent from the records auto-clean.
+- **MultiMC auto-detect** — automatically finds MultiMC / Prism Launcher by scanning common paths and querying running processes; manual Browse is also available.
+- **Per-instance status** — shows each instance's name, log size and file count.
+
+### Input validation
+
+- Count fields only accept non-negative integers (0 or positive whole numbers); threshold fields only accept numbers ≥ 0 MB.
+- Negative numbers, decimals (in count fields), letters, expressions, `NaN` and numbers beyond the supported range are all rejected.
+- Invalid input is flagged in real time with a red inline hint while typing, and an error dialog on submit (the field then reverts to its last valid value) — the plugin never crashes from bad input.
+- Checkbox labels update live as you type a new keep count.
 
 ## Installation
 
@@ -28,27 +53,10 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 ## Safety
 
 - Records cleaning only touches `%USERPROFILE%\speedrunigt\records`, and only files verified as SpeedrunIGT records (UUID filename + `final_igt` content). Nothing else.
-- Logs cleaning only touches `.minecraft/logs` inside MultiMC / Prism instances. `latest.log` and `debug.log` are never deleted.
+- Logs cleaning only touches Minecraft-generated log archives inside `.minecraft/logs` of MultiMC / Prism instances. `latest.log` and `debug.log` are never deleted; user-placed files and folders are never touched.
 - Every manual deletion requires confirmation via a warning dialog.
 - Files locked by a running game cannot be deleted; a message is shown and you can run the cleanup again after closing the game.
 - Uninstall = delete the jar file.
-
-## Build (for developers)
-
-Most users **do not need this** — just download the jar from [Releases](../../releases).
-
-If you want to build from source, you need JDK 17 or newer. Run:
-
-```bash
-bash build.sh
-```
-
-The jar is produced at `out/records-and-logs-bopper-1.0.0.jar`. The build uses compile-only API stubs (`stubs/`) so the plugin jar stays small and references Jingle's own classes at runtime. The plugin is compiled with `--release 17` and runs on Java 17–21 (declared via `minimumJava: 17` in `jingle.plugin.json`).
-
-## Requirements
-
-- Jingle running on **Java 17, 18, 19, 20 or 21** (Java 21 recommended).
-- MultiMC or Prism Launcher (for MC logs cleaning; records cleaning works standalone).
 
 ## License
 
