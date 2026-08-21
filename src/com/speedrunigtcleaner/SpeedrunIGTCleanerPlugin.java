@@ -56,6 +56,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final String PROP_LOGS_AUTO_CLEAN = "logsAutoCleanOnStartup";
     private static final String PROP_LOGS_THRESHOLD_MB = "logsThresholdMB";
     private static final String PROP_LOGS_KEEP_RECENT = "logsKeepRecent";
+    private static final String PROP_LOGS_KEEP_RECENT_MANUAL = "logsKeepRecentManual";
     private static final String PROP_MULTIMC_PATH = "multimcPath";
 
     private static final boolean DEFAULT_AUTO_CLEAN = false;
@@ -66,6 +67,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final boolean DEFAULT_LOGS_AUTO_CLEAN = false;
     private static final double DEFAULT_LOGS_THRESHOLD_MB = 50.0;
     private static final int DEFAULT_LOGS_KEEP_RECENT = 5;
+    private static final boolean DEFAULT_LOGS_KEEP_RECENT_MANUAL = true;
 
     private static final DecimalFormat MB_FORMAT = new DecimalFormat("0.0");
 
@@ -74,6 +76,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static JLabel statusLabel;
     private static JLabel logsStatusLabel;
     private static JTextField multimcPathField;
+    private static JCheckBox logsKeepRecentManualCheckbox;
 
     private static boolean autoCleanEnabled = DEFAULT_AUTO_CLEAN;
     private static double thresholdMB = DEFAULT_THRESHOLD_MB;
@@ -83,6 +86,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static boolean logsAutoCleanEnabled = DEFAULT_LOGS_AUTO_CLEAN;
     private static double logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
     private static int logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
+    private static boolean logsKeepRecentManual = DEFAULT_LOGS_KEEP_RECENT_MANUAL;
     private static String multimcPath = "";
 
     private SpeedrunIGTCleanerPlugin() {
@@ -314,7 +318,7 @@ public final class SpeedrunIGTCleanerPlugin {
         keepRecentRow.add(keepRecentField);
         panel.add(keepRecentRow, gbc);
 
-        JLabel logsHint = new JLabel("\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff0c\u5220\u9664\u5176\u4f59\u65e7\u65e5\u5fd7\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
+        JLabel logsHint = new JLabel("\u81ea\u52a8\u6e05\u7406\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff0c\u5220\u9664\u5176\u4f59\u65e7\u65e5\u5fd7\uff1b\u624b\u52a8\u6e05\u7406\u53ef\u5728\u4e0b\u65b9\u9009\u62e9\u662f\u5426\u4fdd\u7559\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
         logsHint.setFont(logsHint.getFont().deriveFont(11f));
         panel.add(logsHint, gbc);
 
@@ -347,6 +351,10 @@ public final class SpeedrunIGTCleanerPlugin {
                 }
                 logsKeepRecent = v;
                 keepRecentField.setText(String.valueOf(v));
+                if (logsKeepRecentManualCheckbox != null) {
+                    logsKeepRecentManualCheckbox.setText(
+                            "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7");
+                }
                 saveConfig();
             } catch (NumberFormatException ex) {
                 keepRecentField.setText(String.valueOf(logsKeepRecent));
@@ -363,11 +371,19 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(new JSeparator(), gbc);
 
         // --- Manual clean logs ---
-        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u6240\u6709\u65e5\u5fd7");
+        logsKeepRecentManualCheckbox = new JCheckBox(
+                "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7", logsKeepRecentManual);
+        logsKeepRecentManualCheckbox.addActionListener(e -> {
+            logsKeepRecentManual = logsKeepRecentManualCheckbox.isSelected();
+            saveConfig();
+        });
+        panel.add(logsKeepRecentManualCheckbox, gbc);
+
+        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
         cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
         panel.add(cleanLogsButton, gbc);
 
-        JLabel manualHint = new JLabel("\u624b\u52a8\u6e05\u7406\u4f1a\u5220\u9664\u6240\u6709\u65e7\u65e5\u5fd7\uff08\u4ec5\u4fdd\u7559 latest.log\uff09\uff0c\u4e0d\u7559\u526f\u672c\u3002");
+        JLabel manualHint = new JLabel("\u624b\u52a8\u6e05\u7406\u65f6\u6309\u4e0a\u65b9\u8bbe\u7f6e\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff1b\u53d6\u6d88\u52fe\u9009\u5219\u5220\u9664\u6240\u6709\u65e7\u65e5\u5fd7\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
         manualHint.setFont(manualHint.getFont().deriveFont(11f));
         panel.add(manualHint, gbc);
 
@@ -398,7 +414,7 @@ public final class SpeedrunIGTCleanerPlugin {
                 QUICK_ACTION_LOGS_TEXT,
                 SpeedrunIGTCleanerPlugin::cleanAllLogsAndReport,
                 () -> JingleGUI.get().openTab(mainPanel),
-                "Deletes old MC log files (*.log.gz) in MultiMC/Prism instances, preserving latest.log. Right-click for settings.",
+                "Deletes old MC log files in MultiMC/Prism instances, keeping the most recent logs. Right-click for settings.",
                 true);
     }
 
@@ -573,9 +589,11 @@ public final class SpeedrunIGTCleanerPlugin {
     }
 
     private static void cleanAllLogsAndReport() {
+        String warnMsg = logsKeepRecentManual
+                ? "\u5373\u5c06\u5220\u9664 MC \u65e7\u65e5\u5fd7\uff08\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f"
+                : "\u5373\u5c06\u5220\u9664\u6240\u6709 MC \u65e7\u65e5\u5fd7\uff08\u4ec5\u4fdd\u7559 latest.log\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f";
         int confirm = JOptionPane.showConfirmDialog(JingleGUI.get(),
-                "\u5373\u5c06\u5220\u9664\u6240\u6709 MC \u65e7\u65e5\u5fd7\uff08\u4ec5\u4fdd\u7559 latest.log\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f",
-                TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                warnMsg, TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
@@ -593,12 +611,13 @@ public final class SpeedrunIGTCleanerPlugin {
                             "\u672a\u627e\u5230\u542b logs \u6587\u4ef6\u5939\u7684\u5b9e\u4f8b\u3002", TAB_NAME, JOptionPane.INFORMATION_MESSAGE));
                     return;
                 }
+                final int keep = logsKeepRecentManual ? logsKeepRecent : 0;
                 int totalDeleted = 0;
                 long totalFreed = 0;
                 int totalFailures = 0;
                 int totalSkipped = 0;
                 for (MultiMCDetector.InstanceInfo inst : instances) {
-                    LogsCleaner.CleanResult r = LogsCleaner.cleanAllLogs(inst.logsDir);
+                    LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(inst.logsDir, keep);
                     totalDeleted += r.filesDeleted;
                     totalFreed += r.bytesFreed;
                     totalFailures += r.failures;
@@ -614,7 +633,9 @@ public final class SpeedrunIGTCleanerPlugin {
                     String message = "\u5df2\u6e05\u7406 " + instanceCount + " \u4e2a\u5b9e\u4f8b\uff1a\n"
                             + "\u5220\u9664 " + deleted + " \u4e2a\u65e5\u5fd7\u6587\u4ef6\uff0c\u91ca\u653e "
                             + MB_FORMAT.format(freed / 1024.0 / 1024.0) + " MB\u3002\n"
-                            + "latest.log \u7b49\u5f53\u524d\u65e5\u5fd7\u5df2\u4fdd\u7559\u3002";
+                            + (keep > 0
+                                    ? "\u5df2\u4fdd\u7559\u6bcf\u4e2a\u5b9e\u4f8b\u6700\u8fd1 " + keep + " \u4e2a\u65e5\u5fd7\u3002"
+                                    : "latest.log \u7b49\u5f53\u524d\u65e5\u5fd7\u5df2\u4fdd\u7559\u3002");
                     if (skipped > 0) {
                         message += "\n\u5df2\u8df3\u8fc7 " + skipped + " \u4e2a\u975e\u65e5\u5fd7\u6587\u4ef6\u3002";
                     }
@@ -707,6 +728,7 @@ public final class SpeedrunIGTCleanerPlugin {
         logsAutoCleanEnabled = DEFAULT_LOGS_AUTO_CLEAN;
         logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
         logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
+        logsKeepRecentManual = DEFAULT_LOGS_KEEP_RECENT_MANUAL;
         multimcPath = "";
         if (configPath == null || !Files.exists(configPath)) {
             return;
@@ -730,6 +752,8 @@ public final class SpeedrunIGTCleanerPlugin {
             if (logsKeepRecent < 0) {
                 logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
             }
+            logsKeepRecentManual = Boolean.parseBoolean(props.getProperty(
+                    PROP_LOGS_KEEP_RECENT_MANUAL, String.valueOf(DEFAULT_LOGS_KEEP_RECENT_MANUAL)));
             multimcPath = props.getProperty(PROP_MULTIMC_PATH, "");
         } catch (IOException | NumberFormatException e) {
             Jingle.log(Level.WARN, TAB_NAME + ": Failed to load config, using defaults.");
@@ -750,6 +774,7 @@ public final class SpeedrunIGTCleanerPlugin {
             props.setProperty(PROP_LOGS_AUTO_CLEAN, String.valueOf(logsAutoCleanEnabled));
             props.setProperty(PROP_LOGS_THRESHOLD_MB, String.valueOf(logsThresholdMB));
             props.setProperty(PROP_LOGS_KEEP_RECENT, String.valueOf(logsKeepRecent));
+            props.setProperty(PROP_LOGS_KEEP_RECENT_MANUAL, String.valueOf(logsKeepRecentManual));
             props.setProperty(PROP_MULTIMC_PATH, multimcPath);
             try (OutputStream out = Files.newOutputStream(configPath)) {
                 props.store(out, "Records & Logs Bopper config");

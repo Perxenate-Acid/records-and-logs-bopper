@@ -10,9 +10,9 @@ SpeedrunIGT 模组会在 `%USERPROFILE%\speedrunigt\records` 保留速通记录�
 
 - **单标签页** — 两个清理功能都在 Jingle 插件菜单的 `Records & Logs Bopper` 标签页内。
 - **速通记录清理** — 清理 `%USERPROFILE%\speedrunigt\records`，仅删除经过验证的 SpeedrunIGT 记录文件（UUID 文件名 + `final_igt` JSON 字段）。用户自行放入的文件不会被删除。
-- **MC 日志清理** — 清理所有 MultiMC / Prism 实例的 `.minecraft/logs`。`latest.log` 和 `debug.log` 永不删除，仅删除 `*.log.gz` 归档文件和旧 `*.log` 文件。
+- **MC 日志清理** — 清理所有 MultiMC / Prism 实例的 `.minecraft/logs`。`latest.log` 和 `debug.log` 永不删除，仅删除 Minecraft 游戏生成的滚动日志归档（如 `2026-08-21-1.log.gz`、`debug-1.log.gz`），用户自行放入的文件不会被删除。
 - **启动时自动清理** — Jingle 启动时，若速通记录或日志超过各自的大小阈值（默认各 50 MB），则自动清理。**默认关闭**，可分别为速通记录和日志独立开启。
-- **保留最近文件** — 清理时可选择保留最近的 N 个速通记录（默认 10 个）或日志（默认 5 个）。
+- **保留最近文件** — 清理速通记录时可选择保留最近 10 个记录（默认关闭，手动与自动清理均如此）；清理日志时默认保留最近 5 个（自动清理始终保留，手动清理可在标签页中切换，默认开启）。
 - **删除确认** — 每次手动删除前都会弹出警告对话框，需要明确确认才会执行。
 - **快捷按钮** — Jingle 主窗口上的 `Clean Records` 和 `Clean Logs` 快捷按钮。
 - **热键动作** — 可在 Jingle 的 Hotkeys 页面将 `Clean Records` 和 `Clean Logs` 动作绑定到任意快捷键。
