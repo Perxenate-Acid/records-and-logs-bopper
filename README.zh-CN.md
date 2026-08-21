@@ -9,25 +9,25 @@
 
 ## 功能
 
-插件提供两个清理器：一个清理速通记录，一个清理 MC 日志。
+插件提供速通记录清理与 MC 日志清理两项功能。
 
 ### 速通记录清理
 
-SpeedrunIGT 每跑一次就会往 `%USERPROFILE%\speedrunigt\records` 里存一个文件，攒得很快。清理器只删真正的 SpeedrunIGT 记录——文件名格式和文件内容都会检查——你自己放进文件夹的东西不会被碰。
+SpeedrunIGT 每完成一次速通，都会在 `%USERPROFILE%\speedrunigt\records` 中保存一个记录文件，长期使用后数量增长很快。清理器仅删除真正的 SpeedrunIGT 记录：文件名格式与文件内容均会经过校验，用户自行放入该文件夹的文件不受影响。
 
-点"立即清理记录"手动清理（会先让你确认），也可以让它在 Jingle 启动时自动清理：文件夹超过大小阈值（默认 50 MB）才会动手，默认关闭。两种方式都可以选择保留最近的记录而不是全部删掉，保留几个随你定，默认 10 个。标签页会显示文件夹当前大小和文件数，还有一键打开文件夹的按钮。
+可通过"立即清理记录"按钮手动清理（执行前会弹出确认对话框），也可启用 Jingle 启动时自动清理：仅当文件夹大小超过阈值（默认 50 MB）时才会执行，默认关闭。两种方式均可选择保留最近若干条记录而非全部删除，保留数量可自定义，默认为 10。标签页会显示文件夹当前大小与文件数量，并提供打开文件夹的按钮。
 
 ### MC 日志清理
 
-每个 MultiMC / Prism 实例的 `.minecraft/logs` 里，旧日志会越攒越多。这个清理器一次处理所有实例，只删游戏自己生成的日志归档（比如 `2026-08-21-1.log.gz`、`debug-1.log.gz`）。`latest.log` 和 `debug.log` 永远保留，你自己放进去的文件也不会被碰。
+每个 MultiMC / Prism 实例的 `.minecraft/logs` 文件夹中都会逐渐积累旧日志。清理器可一次处理所有实例，仅删除游戏自身生成的日志归档（如 `2026-08-21-1.log.gz`、`debug-1.log.gz`）；`latest.log` 与 `debug.log` 始终保留，用户自行放入的文件同样不受影响。
 
-手动清理默认保留每个实例最近 5 个日志（数量可以改，取消勾选就全删）。启动时自动清理则始终保留最近日志，日志总大小超过独立的阈值（同样默认 50 MB，同样默认关闭）才触发。插件会自动找你的 MultiMC / Prism Launcher 文件夹；找错了就点 Browse 手动选。每个实例的日志大小和文件数都显示在标签页里。
+手动清理默认保留每个实例最近 5 个日志（数量可自定义，取消勾选则全部删除）。启动时自动清理始终保留最近的日志，仅当日志总大小超过独立阈值（同样默认 50 MB，同样默认关闭）时才执行。插件会自动检测 MultiMC / Prism Launcher 文件夹，若检测结果有误，可通过 Browse 按钮手动指定。每个实例的日志大小与文件数量均显示在标签页中。
 
 ### 快捷方式
 
-除了标签页里的按钮，Jingle 主窗口上还有 `Clean Records` 和 `Clean Logs` 两个按钮，这两个动作也可以在 Jingle 的 Hotkeys 页面绑定快捷键。
+除标签页内的按钮外，Jingle 主窗口还提供 `Clean Records` 与 `Clean Logs` 两个按钮，这两个动作也可以在 Jingle 的 Hotkeys 页面绑定快捷键。
 
-如果文件正被运行中的游戏占用就删不掉——插件会告诉你，关掉游戏后再清一次就行。
+若文件正被运行中的游戏占用而无法删除，插件会给出提示，关闭游戏后再次执行清理即可。
 
 ## 安装与卸载
 
@@ -37,15 +37,13 @@ SpeedrunIGT 每跑一次就会往 `%USERPROFILE%\speedrunigt\records` 里存一�
 2. 将 jar 文件放入 Jingle 的插件文件夹：`%USERPROFILE%\.config\Jingle\plugins\`（不存在则创建）。
 3. 完全重启 Jingle（不是最小化到托盘后恢复）。
 
-> **无需克隆仓库或使用命令行。** Releases 页面提供的 jar 文件就是安装所需的全部内容。
-
 **卸载**
 
 1. 完全退出 Jingle。
 2. 删除插件文件夹 `%USERPROFILE%\.config\Jingle\plugins\` 中的 `records-and-logs-bopper-1.0.0.jar`。
 3. 重启 Jingle，插件即已移除。
 
-如需连设置一起清掉，可以再删除 `%USERPROFILE%\.config\Jingle\records-and-logs-bopper.properties`；除此之外不会留下其他文件。
+如需删除设置，可再删除 `%USERPROFILE%\.config\Jingle\records-and-logs-bopper.properties`；除此之外不会留下其他文件。
 
 ## 许可
 

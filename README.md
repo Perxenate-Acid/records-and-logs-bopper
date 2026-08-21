@@ -9,25 +9,25 @@ A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun 
 
 ## Features
 
-The plugin gives you two cleaners: one for speedrun records, one for Minecraft logs.
+The plugin provides two cleaners: one for speedrun records, one for Minecraft logs.
 
 ### Records cleaner
 
-SpeedrunIGT saves one file per run in `%USERPROFILE%\speedrunigt\records`, and they pile up fast. The cleaner only deletes files that really are SpeedrunIGT records — it checks both the filename format and the file content — so anything you put in that folder yourself stays where it is.
+SpeedrunIGT saves one file per run in `%USERPROFILE%\speedrunigt\records`, and the files accumulate quickly. The cleaner deletes only genuine SpeedrunIGT records — both the filename format and the file content are verified — so files you placed in the folder yourself are left untouched.
 
-Hit "Clean Records Now" to clean manually (Jingle asks you to confirm first), or let it happen automatically when Jingle starts and the folder has grown past a size threshold (50 MB by default). Automatic cleaning is off by default. Either way you can keep the most recent records instead of deleting everything — how many to keep is up to you, 10 by default. The tab shows the current folder size and file count, and has a button that opens the folder.
+Manual cleaning is done via the "Clean Records Now" button (Jingle asks for confirmation first); cleaning can also run automatically on Jingle startup, but only once the folder exceeds a size threshold (50 MB by default). Automatic cleaning is off by default. Either way, the most recent records can be kept instead of deleting everything — the number to keep is configurable, 10 by default. The tab shows the current folder size and file count, and provides a button that opens the folder.
 
 ### MC logs cleaner
 
-Old Minecraft logs accumulate in `.minecraft/logs` of every MultiMC / Prism instance. This cleaner goes through all your instances in one go and deletes only the log archives Minecraft itself creates (like `2026-08-21-1.log.gz` or `debug-1.log.gz`). `latest.log` and `debug.log` are always kept, and so is anything you placed in the folder yourself.
+Old Minecraft logs accumulate in the `.minecraft/logs` folder of every MultiMC / Prism instance. The cleaner processes all instances at once and deletes only the log archives Minecraft itself creates (such as `2026-08-21-1.log.gz` or `debug-1.log.gz`). `latest.log` and `debug.log` are always kept, and so is anything you placed in the folder yourself.
 
-Manual cleaning keeps the 5 most recent logs per instance by default (you can change the number, or untick the option to delete them all). Automatic cleaning on startup always keeps the recent logs, and only kicks in once the total log size passes a threshold of its own (also 50 MB by default, also off by default). The plugin finds your MultiMC / Prism Launcher folder automatically; if it guesses wrong, just pick the folder yourself with Browse. Each instance's log size and file count are shown in the tab.
+Manual cleaning keeps the 5 most recent logs per instance by default (the number is configurable, or untick the option to delete them all). Automatic cleaning on startup always keeps the recent logs and runs only once the total log size exceeds its own threshold (also 50 MB by default, also off by default). The plugin detects your MultiMC / Prism Launcher folder automatically; if the detection is incorrect, the folder can be selected manually via Browse. Each instance's log size and file count are shown in the tab.
 
 ### Shortcuts
 
-Besides the buttons in the tab, there are `Clean Records` and `Clean Logs` buttons on the Jingle main window, and both actions can be bound to hotkeys in Jingle's Hotkeys page.
+In addition to the buttons in the tab, the Jingle main window provides `Clean Records` and `Clean Logs` buttons, and both actions can be bound to hotkeys in Jingle's Hotkeys page.
 
-If a file is locked by a running game it can't be deleted — the plugin tells you, and you can clean again after closing the game.
+If a file is locked by a running game it cannot be deleted — the plugin will notify you, and you can clean again after closing the game.
 
 ## Installation & Uninstallation
 
@@ -37,15 +37,13 @@ If a file is locked by a running game it can't be deleted — the plugin tells y
 2. Put the jar into Jingle's plugin folder: `%USERPROFILE%\.config\Jingle\plugins\` (create it if missing).
 3. Restart Jingle completely (not just minimized to tray).
 
-> **You do not need to clone the repo or run any commands.** The pre-built jar in Releases is all you need.
-
 **Uninstall**
 
 1. Fully exit Jingle.
 2. Delete `records-and-logs-bopper-1.0.0.jar` from `%USERPROFILE%\.config\Jingle\plugins\`.
 3. Restart Jingle — the plugin is gone.
 
-Optionally, also delete `%USERPROFILE%\.config\Jingle\records-and-logs-bopper.properties` to remove your settings; nothing else is left behind.
+To also remove your settings, delete `%USERPROFILE%\.config\Jingle\records-and-logs-bopper.properties`; nothing else is left behind.
 
 ## License
 
