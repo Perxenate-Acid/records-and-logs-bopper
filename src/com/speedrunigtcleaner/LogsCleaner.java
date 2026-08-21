@@ -9,18 +9,23 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
  * Core logic for cleaning Minecraft log files in .minecraft/logs.
  * This class has NO dependency on Jingle, so it can be unit-tested standalone.
  *
- * Log file types:
- *  - latest.log          → active log, NEVER deleted
- *  - debug.log           → active debug log, NEVER deleted
- *  - *.log.gz            → compressed old logs (archives), safe to delete
- *  - other *.log         → old uncompressed logs (rare), safe to delete
- *  - everything else     → not a log file, skipped
+ * Minecraft-generated log files (log4j rolling appenders):
+ *  - latest.log              → active log, NEVER deleted
+ *  - debug.log               → active debug log, NEVER deleted
+ *  - yyyy-MM-dd-N.log.gz     → rolled main log archives (e.g. 2026-08-21-1.log.gz)
+ *  - debug-N.log(.gz)        → rolled debug log archives (e.g. debug-1.log.gz)
+ *
+ * Only files matching the Minecraft naming pattern above are ever deleted.
+ * Anything else — including user-placed files that merely LOOK like logs
+ * (e.g. "notes.log", "backup.log.gz") — is skipped, and directories are
+ * never touched.
  */
 public final class LogsCleaner {
 
@@ -28,6 +33,17 @@ public final class LogsCleaner {
     private static final Set<String> ACTIVE_LOGS = new HashSet<>(Arrays.asList(
             "latest.log", "debug.log"
     ));
+
+    /**
+     * Matches Minecraft-generated rolling log files:
+     *  - yyyy-MM-dd-N.log / yyyy-MM-dd-N.log.gz   (main log archives)
+     *  - debug-N.log / debug-N.log.gz             (debug log archives)
+     *  - debug-yyyy-MM-dd-N.log(.gz)              (some versions' debug archives)
+     * Deliberately does NOT match user-placed files like "notes.log" or "backup.log.gz".
+     */
+    private static final Pattern MC_LOG_PATTERN = Pattern.compile(
+            "^(?:\\d{4}-\\d{2}-\\d{2}-\\d+|debug-\\d+|debug-\\d{4}-\\d{2}-\\d{2}-\\d+)\\.log(?:\\.gz)?$",
+            Pattern.CASE_INSENSITIVE);
 
     /** Result of a cleaning operation. */
     public static final class CleanResult {
@@ -72,9 +88,25 @@ public final class LogsCleaner {
     }
 
     /**
-     * Returns true if the file is a deletable log file — i.e. a log file that is NOT
-     * an active log. This includes *.log.gz archives and any *.log file that isn't
-     * latest.log or debug.log.
+     * Returns true if the file matches Minecraft's rolling-log naming pattern
+     * (yyyy-MM-dd-N.log(.gz), debug-N.log(.gz), debug-yyyy-MM-dd-N.log(.gz)).
+     * User-placed files that merely end in .log/.log.gz do NOT match.
+     */
+    public static boolean isMinecraftLogFile(Path file) {
+        if (file == null || !Files.isRegularFile(file)) {
+            return false;
+        }
+        Path name = file.getFileName();
+        if (name == null) {
+            return false;
+        }
+        return MC_LOG_PATTERN.matcher(name.toString()).matches();
+    }
+
+    /**
+     * Returns true if the file is a deletable log file — i.e. a Minecraft-generated
+     * rolling log that is NOT an active log. User-placed files (even ones named
+     * like "notes.log" or "backup.log.gz") are NOT deletable.
      */
     public static boolean isDeletableLog(Path file) {
         if (file == null || !Files.isRegularFile(file)) {
@@ -83,12 +115,7 @@ public final class LogsCleaner {
         if (isActiveLog(file)) {
             return false;
         }
-        Path name = file.getFileName();
-        if (name == null) {
-            return false;
-        }
-        String lower = name.toString().toLowerCase();
-        return lower.endsWith(".log.gz") || lower.endsWith(".log");
+        return isMinecraftLogFile(file);
     }
 
     /**
@@ -134,7 +161,9 @@ public final class LogsCleaner {
     /**
      * Deletes deletable log files inside the given directory.
      * Active logs (latest.log, debug.log) are NEVER deleted.
-     * Non-log files are skipped (counted in filesSkipped).
+     * Only files matching Minecraft's rolling-log naming pattern are deleted;
+     * user-placed files and directories are never touched (non-matching files
+     * are counted in filesSkipped).
      * If {@code keepRecent > 0}, the most recently modified {@code keepRecent}
      * deletable log files are preserved.
      *
@@ -188,16 +217,11 @@ public final class LogsCleaner {
                 continue; // keep the root folder
             }
             if (Files.isDirectory(p)) {
-                // Try to delete empty sub-folders; silently leave non-empty ones.
-                try {
-                    Files.delete(p);
-                } catch (IOException ignored) {
-                }
-                continue;
+                continue; // never touch directories (user may have placed them)
             }
-            // Regular file: only delete if it's a deletable log.
+            // Regular file: only delete if it's a Minecraft-generated rolling log.
             if (!isDeletableLog(p)) {
-                // Active logs (latest.log, debug.log) and non-log files are skipped.
+                // Active logs (latest.log, debug.log) and user-placed files are skipped.
                 if (!isActiveLog(p)) {
                     skipped++;
                 }

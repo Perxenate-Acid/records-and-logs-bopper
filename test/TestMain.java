@@ -173,6 +173,17 @@ public class TestMain {
         Path readmeFile = logsDir.resolve("README.txt");
         Files.write(readmeFile, "not a log".getBytes(StandardCharsets.UTF_8));
 
+        // --- Create user-placed files that LOOK like logs (must be skipped) ---
+        Path userLog = logsDir.resolve("mynotes.log");
+        Files.write(userLog, "user's own log".getBytes(StandardCharsets.UTF_8));
+        Path userGz = logsDir.resolve("backup.log.gz");
+        Files.write(userGz, "user's backup".getBytes(StandardCharsets.UTF_8));
+        // User-placed folder must survive cleanup too
+        Path userDir = logsDir.resolve("user-data");
+        Files.createDirectories(userDir);
+        Path userFileInDir = userDir.resolve("keepme.txt");
+        Files.write(userFileInDir, "keep".getBytes(StandardCharsets.UTF_8));
+
         // --- Test isActiveLog / isLogArchive / isDeletableLog ---
         System.out.println("[test] --- file type tests ---");
         check(LogsCleaner.isActiveLog(latestLog), "latest.log should be active");
@@ -187,6 +198,8 @@ public class TestMain {
         check(!LogsCleaner.isDeletableLog(debugLog), "debug.log should NOT be deletable");
         check(!LogsCleaner.isDeletableLog(lockFile), ".lck file should NOT be deletable");
         check(!LogsCleaner.isDeletableLog(readmeFile), "README.txt should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(userLog), "user .log file should NOT be deletable");
+        check(!LogsCleaner.isDeletableLog(userGz), "user .log.gz file should NOT be deletable");
         check(!LogsCleaner.isDeletableLog(temp.resolve("nope")), "non-existent should not be deletable");
 
         // --- Test size/count ---
@@ -208,13 +221,18 @@ public class TestMain {
         // Oldest is debugArchive (mtime=500), then archives[0] (mtime=1000)
         check(r.filesDeleted == 2, "should delete 2 oldest logs (keep 5 of 7)");
         check(r.failures == 0, "should have 0 failures");
-        check(r.filesSkipped == 2, "should skip 2 non-log files (.lck + README)");
+        check(r.filesSkipped == 5, "should skip 5 non-log files (.lck + README + user .log + user .log.gz + file in user dir)");
         // Active logs must still exist
         check(Files.exists(latestLog), "latest.log must NOT be deleted");
         check(Files.exists(debugLog), "debug.log must NOT be deleted");
         // Non-log files must still exist
         check(Files.exists(lockFile), ".lck file must NOT be deleted");
         check(Files.exists(readmeFile), "README.txt must NOT be deleted");
+        // User-placed log-lookalike files and folders must survive
+        check(Files.exists(userLog), "user .log file must NOT be deleted");
+        check(Files.exists(userGz), "user .log.gz file must NOT be deleted");
+        check(Files.isDirectory(userDir), "user folder must NOT be deleted");
+        check(Files.exists(userFileInDir), "file inside user folder must NOT be deleted");
         // Newest 5 archives should be kept (archives[1] through archives[5])
         // debugArchive (mtime=500) and archives[0] (mtime=1000) should be deleted
         check(!Files.exists(debugArchive), "oldest debug archive should be deleted");
@@ -230,11 +248,15 @@ public class TestMain {
         System.out.println("[test] cleanAll: deleted=" + r2.filesDeleted + " freed=" + r2.bytesFreed
                 + " skipped=" + r2.filesSkipped);
         check(r2.filesDeleted == 5, "should delete all 5 remaining archives");
-        check(r2.filesSkipped == 2, "should skip 2 non-log files");
+        check(r2.filesSkipped == 5, "should skip 5 non-log files");
         check(Files.exists(latestLog), "latest.log must NOT be deleted");
         check(Files.exists(debugLog), "debug.log must NOT be deleted");
         check(Files.exists(lockFile), ".lck file must NOT be deleted");
         check(Files.exists(readmeFile), "README.txt must NOT be deleted");
+        check(Files.exists(userLog), "user .log file must NOT be deleted");
+        check(Files.exists(userGz), "user .log.gz file must NOT be deleted");
+        check(Files.isDirectory(userDir), "user folder must NOT be deleted");
+        check(Files.exists(userFileInDir), "file inside user folder must NOT be deleted");
         check(LogsCleaner.countLogFiles(logsDir) == 0, "should have 0 deletable logs after cleanAll");
 
         // --- Test missing folder ---
@@ -271,6 +293,10 @@ public class TestMain {
         Files.deleteIfExists(debugLog);
         Files.deleteIfExists(lockFile);
         Files.deleteIfExists(readmeFile);
+        Files.deleteIfExists(userLog);
+        Files.deleteIfExists(userGz);
+        Files.deleteIfExists(userFileInDir);
+        Files.deleteIfExists(userDir);
         for (int i = 1; i < 6; i++) Files.deleteIfExists(archives[i]);
         Files.deleteIfExists(logsDir);
         Files.deleteIfExists(a1);
