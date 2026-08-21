@@ -157,18 +157,10 @@ public final class SpeedrunIGTCleanerPlugin {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
         panel.add(title, gbc);
 
-        JLabel subtitle = new JLabel("\u6e05\u7406 SpeedrunIGT \u901f\u901a\u8bb0\u5f55\u548c MultiMC/Prism \u5b9e\u4f8b\u65e5\u5fd7\u3002");
-        subtitle.setFont(subtitle.getFont().deriveFont(11f));
-        panel.add(subtitle, gbc);
-
         // ==================== Section 1: Records Cleaner ====================
         JLabel sec1 = new JLabel("\u2014\u2014 \u901f\u901a\u8bb0\u5f55\u6e05\u7406 \u2014\u2014");
         sec1.setFont(sec1.getFont().deriveFont(Font.BOLD, 13f));
         panel.add(sec1, gbc);
-
-        JLabel recordsDesc = new JLabel("\u53ea\u6e05\u7406 " + getRecordsDir() + " \u5185\u7531 SpeedrunIGT \u6a21\u7ec4\u751f\u6210\u7684\u901f\u901a\u8bb0\u5f55\u3002");
-        recordsDesc.setFont(recordsDesc.getFont().deriveFont(11f));
-        panel.add(recordsDesc, gbc);
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(statusLabel.getFont().deriveFont(12f));
@@ -294,10 +286,6 @@ public final class SpeedrunIGTCleanerPlugin {
         sec2.setFont(sec2.getFont().deriveFont(Font.BOLD, 13f));
         panel.add(sec2, gbc);
 
-        JLabel logsDesc = new JLabel("\u6e05\u7406 MultiMC / Prism Launcher \u5b9e\u4f8b .minecraft/logs \u4e2d\u5806\u79ef\u7684\u65e5\u5fd7\u3002latest.log \u4e0d\u4f1a\u88ab\u5220\u9664\u3002");
-        logsDesc.setFont(logsDesc.getFont().deriveFont(11f));
-        panel.add(logsDesc, gbc);
-
         // MultiMC path row
         JPanel pathRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         pathRow.add(new JLabel("MultiMC \u8def\u5f84:"));
@@ -399,10 +387,6 @@ public final class SpeedrunIGTCleanerPlugin {
             }
         });
 
-        JLabel logsHint = new JLabel("\u81ea\u52a8\u6e05\u7406\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff0c\u5220\u9664\u5176\u4f59\u65e7\u65e5\u5fd7\uff1b\u624b\u52a8\u6e05\u7406\u53ef\u5728\u4e0b\u65b9\u9009\u62e9\u662f\u5426\u4fdd\u7559\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
-        logsHint.setFont(logsHint.getFont().deriveFont(11f));
-        panel.add(logsHint, gbc);
-
         Runnable applyLogsThreshold = () -> {
             String err = validateThreshold(logsThresholdField.getText());
             if (err != null) {
@@ -458,17 +442,11 @@ public final class SpeedrunIGTCleanerPlugin {
         });
         panel.add(logsKeepRecentManualCheckbox, gbc);
 
+        JPanel logsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
         cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
-        panel.add(cleanLogsButton, gbc);
-
-        JLabel manualHint = new JLabel("\u624b\u52a8\u6e05\u7406\u65f6\u6309\u4e0a\u65b9\u8bbe\u7f6e\u4fdd\u7559\u6700\u8fd1 N \u4e2a\u65e5\u5fd7\uff1b\u53d6\u6d88\u52fe\u9009\u5219\u5220\u9664\u6240\u6709\u65e7\u65e5\u5fd7\u3002latest.log \u59cb\u7ec8\u4fdd\u7559\u3002");
-        manualHint.setFont(manualHint.getFont().deriveFont(11f));
-        panel.add(manualHint, gbc);
-
-        JLabel footnote = new JLabel("\u63d0\u793a\uff1a\u53ef\u5728 \"Hotkeys\" \u6807\u7b7e\u9875\u628a \"" + HOTKEY_ACTION + "\" \u548c \"" + HOTKEY_LOGS_ACTION + "\" \u7ed1\u5b9a\u5230\u5feb\u6377\u952e\u3002");
-        footnote.setFont(footnote.getFont().deriveFont(11f));
-        panel.add(footnote, gbc);
+        logsBtnRow.add(cleanLogsButton);
+        panel.add(logsBtnRow, gbc);
 
         // Extra bottom padding
         gbc.weighty = 1.0;
