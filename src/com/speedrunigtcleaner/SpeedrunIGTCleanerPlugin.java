@@ -76,6 +76,11 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final DecimalFormat MB_FORMAT = new DecimalFormat("0.0");
     private static final Color ERROR_COLOR = new Color(0xC62828);
 
+    /** How often the background monitor re-checks folder sizes (ms). */
+    private static final long MONITOR_INTERVAL_MS = 60_000;
+    /** Lock so the monitor and immediate checks never clean at the same time. */
+    private static final Object CLEAN_LOCK = new Object();
+
     private static Path configPath;
     private static JPanel mainPanel;
     private static JLabel statusLabel;
@@ -114,29 +119,30 @@ public final class SpeedrunIGTCleanerPlugin {
         PluginHotkeys.addHotkeyAction(HOTKEY_ACTION, SpeedrunIGTCleanerPlugin::cleanAndReport);
         PluginHotkeys.addHotkeyAction(HOTKEY_LOGS_ACTION, SpeedrunIGTCleanerPlugin::cleanAllLogsAndReport);
 
-        if (autoCleanEnabled) {
-            Thread t = new Thread(() -> {
+        // Background monitor: while Jingle is open, periodically check both folders
+        // and auto-clean whichever one is over its threshold (and has auto-clean on).
+        Thread monitor = new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {
+                return;
+            }
+            while (true) {
                 try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException ignored) {
+                    if (autoCleanEnabled) {
+                        autoCleanIfOverThreshold(false);
+                    }
+                    if (logsAutoCleanEnabled) {
+                        autoCleanLogs(false);
+                    }
+                    Thread.sleep(MONITOR_INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    return;
                 }
-                autoCleanIfOverThreshold(true);
-            }, "records-logs-bopper-autoclean");
-            t.setDaemon(true);
-            t.start();
-        }
-
-        if (logsAutoCleanEnabled) {
-            Thread t = new Thread(() -> {
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException ignored) {
-                }
-                autoCleanLogs();
-            }, "mc-logs-cleaner-autoclean");
-            t.setDaemon(true);
-            t.start();
-        }
+            }
+        }, "records-logs-bopper-monitor");
+        monitor.setDaemon(true);
+        monitor.start();
     }
 
     /* ------------------------------------------------------------------ */
@@ -183,10 +189,13 @@ public final class SpeedrunIGTCleanerPlugin {
         recordsBtnRow.add(openFolderButton);
         panel.add(recordsBtnRow, gbc);
 
-        JCheckBox autoCleanCheckbox = new JCheckBox("\u542f\u52a8 Jingle \u65f6\u81ea\u52a8\u6e05\u7406\u8bb0\u5f55\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", autoCleanEnabled);
+        JCheckBox autoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u8bb0\u5f55\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", autoCleanEnabled);
         autoCleanCheckbox.addActionListener(e -> {
             autoCleanEnabled = autoCleanCheckbox.isSelected();
             saveConfig();
+            if (autoCleanEnabled) {
+                triggerImmediateAutoClean();
+            }
         });
         panel.add(autoCleanCheckbox, gbc);
 
@@ -345,10 +354,13 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(new JSeparator(), gbc);
 
         // --- Auto-clean logs section ---
-        JCheckBox logsAutoCleanCheckbox = new JCheckBox("\u542f\u52a8 Jingle \u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", logsAutoCleanEnabled);
+        JCheckBox logsAutoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", logsAutoCleanEnabled);
         logsAutoCleanCheckbox.addActionListener(e -> {
             logsAutoCleanEnabled = logsAutoCleanCheckbox.isSelected();
             saveConfig();
+            if (logsAutoCleanEnabled) {
+                triggerImmediateAutoClean();
+            }
         });
         panel.add(logsAutoCleanCheckbox, gbc);
 
@@ -635,31 +647,56 @@ public final class SpeedrunIGTCleanerPlugin {
     }
 
     private static void autoCleanIfOverThreshold(boolean logWhenSkipped) {
-        try {
-            Path dir = getRecordsDir();
-            long size = RecordsCleaner.getFolderSize(dir);
-            long thresholdBytes = (long) (thresholdMB * 1024 * 1024);
-            if (size > thresholdBytes) {
-                int keep = keepRecentAuto ? recordsKeepRecent : 0;
-                RecordsCleaner.CleanResult result = RecordsCleaner.clean(dir, keep);
-                String logMsg = TAB_NAME + ": Auto-cleaned records (" + result.filesDeleted
-                        + " files, " + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB freed)";
-                if (keep > 0) {
-                    logMsg += ", kept " + recordsKeepRecent + " most recent records";
+        synchronized (CLEAN_LOCK) {
+            try {
+                Path dir = getRecordsDir();
+                long size = RecordsCleaner.getFolderSize(dir);
+                long thresholdBytes = (long) (thresholdMB * 1024 * 1024);
+                if (size > thresholdBytes) {
+                    int keep = keepRecentAuto ? recordsKeepRecent : 0;
+                    RecordsCleaner.CleanResult result = RecordsCleaner.clean(dir, keep);
+                    String logMsg = TAB_NAME + ": Auto-cleaned records (" + result.filesDeleted
+                            + " files, " + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB freed)";
+                    if (keep > 0) {
+                        logMsg += ", kept " + recordsKeepRecent + " most recent records";
+                    }
+                    if (result.filesSkipped > 0) {
+                        logMsg += ", skipped " + result.filesSkipped + " non-record files";
+                    }
+                    Jingle.log(Level.INFO, logMsg + ".");
+                    SwingUtilities.invokeLater(SpeedrunIGTCleanerPlugin::updateStatusLabel);
+                } else if (logWhenSkipped) {
+                    Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, records size ("
+                            + MB_FORMAT.format(size / 1024.0 / 1024.0) + " MB) is within threshold ("
+                            + (long) thresholdMB + " MB).");
                 }
-                if (result.filesSkipped > 0) {
-                    logMsg += ", skipped " + result.filesSkipped + " non-record files";
-                }
-                Jingle.log(Level.INFO, logMsg + ".");
-                SwingUtilities.invokeLater(SpeedrunIGTCleanerPlugin::updateStatusLabel);
-            } else if (logWhenSkipped) {
-                Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, records size ("
-                        + MB_FORMAT.format(size / 1024.0 / 1024.0) + " MB) is within threshold ("
-                        + (long) thresholdMB + " MB).");
+            } catch (Exception e) {
+                Jingle.logError(TAB_NAME + ": Auto-clean failed!", e);
             }
-        } catch (Exception e) {
-            Jingle.logError(TAB_NAME + ": Auto-clean failed!", e);
         }
+    }
+
+    /**
+     * Runs an immediate auto-clean check off the EDT (used right after an auto-clean
+     * checkbox is switched on, so the user does not have to wait for the next
+     * monitor cycle).
+     */
+    private static void triggerImmediateAutoClean() {
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+                return;
+            }
+            if (autoCleanEnabled) {
+                autoCleanIfOverThreshold(true);
+            }
+            if (logsAutoCleanEnabled) {
+                autoCleanLogs(true);
+            }
+        }, "records-logs-bopper-immediate");
+        t.setDaemon(true);
+        t.start();
     }
 
     private static void openRecordsFolder() {
@@ -830,56 +867,66 @@ public final class SpeedrunIGTCleanerPlugin {
         }, "mc-logs-cleaner").start();
     }
 
-    private static void autoCleanLogs() {
-        try {
-            if (!logsAutoCleanEnabled) {
-                return;
+    private static void autoCleanLogs(boolean logWhenSkipped) {
+        synchronized (CLEAN_LOCK) {
+            try {
+                if (!logsAutoCleanEnabled) {
+                    return;
+                }
+                if (multimcPath == null || multimcPath.isEmpty()) {
+                    if (logWhenSkipped) {
+                        Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, MultiMC path not set.");
+                    }
+                    return;
+                }
+                Path multimcDir = Paths.get(multimcPath);
+                if (!MultiMCDetector.isValidMultiMCDir(multimcDir)) {
+                    if (logWhenSkipped) {
+                        Jingle.log(Level.WARN, TAB_NAME + ": Auto-clean skipped, invalid MultiMC path: " + multimcPath);
+                    }
+                    return;
+                }
+                List<MultiMCDetector.InstanceInfo> instances = MultiMCDetector.getInstances(multimcDir);
+                if (instances.isEmpty()) {
+                    if (logWhenSkipped) {
+                        Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, no instances with logs found.");
+                    }
+                    return;
+                }
+                long totalSize = 0;
+                for (MultiMCDetector.InstanceInfo inst : instances) {
+                    totalSize += inst.logSize;
+                }
+                long thresholdBytes = (long) (logsThresholdMB * 1024 * 1024);
+                if (totalSize <= thresholdBytes) {
+                    if (logWhenSkipped) {
+                        Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, total log size ("
+                                + MB_FORMAT.format(totalSize / 1024.0 / 1024.0) + " MB) is within threshold ("
+                                + (long) logsThresholdMB + " MB).");
+                    }
+                    return;
+                }
+                int totalDeleted = 0;
+                long totalFreed = 0;
+                int totalFailures = 0;
+                for (MultiMCDetector.InstanceInfo inst : instances) {
+                    LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(inst.logsDir, logsKeepRecent);
+                    totalDeleted += r.filesDeleted;
+                    totalFreed += r.bytesFreed;
+                    totalFailures += r.failures;
+                }
+                String logMsg = TAB_NAME + ": Auto-cleaned logs across " + instances.size() + " instances ("
+                        + totalDeleted + " files, " + MB_FORMAT.format(totalFreed / 1024.0 / 1024.0) + " MB freed"
+                        + ", kept " + logsKeepRecent + " most recent per instance";
+                if (totalFailures > 0) {
+                    logMsg += ", " + totalFailures + " failures";
+                }
+                logMsg += ").";
+                Jingle.log(Level.INFO, logMsg);
+                SwingUtilities.invokeLater(SpeedrunIGTCleanerPlugin::refreshLogsStatus);
+            } catch (Exception e) {
+                Jingle.logError(TAB_NAME + ": Auto-clean failed!", e);
             }
-            if (multimcPath == null || multimcPath.isEmpty()) {
-                Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, MultiMC path not set.");
-                return;
-            }
-            Path multimcDir = Paths.get(multimcPath);
-            if (!MultiMCDetector.isValidMultiMCDir(multimcDir)) {
-                Jingle.log(Level.WARN, TAB_NAME + ": Auto-clean skipped, invalid MultiMC path: " + multimcPath);
-                return;
-            }
-            List<MultiMCDetector.InstanceInfo> instances = MultiMCDetector.getInstances(multimcDir);
-            if (instances.isEmpty()) {
-                Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, no instances with logs found.");
-                return;
-            }
-            long totalSize = 0;
-            for (MultiMCDetector.InstanceInfo inst : instances) {
-                totalSize += inst.logSize;
-            }
-            long thresholdBytes = (long) (logsThresholdMB * 1024 * 1024);
-            if (totalSize <= thresholdBytes) {
-                Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, total log size ("
-                        + MB_FORMAT.format(totalSize / 1024.0 / 1024.0) + " MB) is within threshold ("
-                        + (long) logsThresholdMB + " MB).");
-                return;
-            }
-            int totalDeleted = 0;
-            long totalFreed = 0;
-            int totalFailures = 0;
-            for (MultiMCDetector.InstanceInfo inst : instances) {
-                LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(inst.logsDir, logsKeepRecent);
-                totalDeleted += r.filesDeleted;
-                totalFreed += r.bytesFreed;
-                totalFailures += r.failures;
-            }
-            String logMsg = TAB_NAME + ": Auto-cleaned logs across " + instances.size() + " instances ("
-                    + totalDeleted + " files, " + MB_FORMAT.format(totalFreed / 1024.0 / 1024.0) + " MB freed"
-                    + ", kept " + logsKeepRecent + " most recent per instance";
-            if (totalFailures > 0) {
-                logMsg += ", " + totalFailures + " failures";
-            }
-            logMsg += ").";
-            Jingle.log(Level.INFO, logMsg);
-            SwingUtilities.invokeLater(SpeedrunIGTCleanerPlugin::refreshLogsStatus);
-        } catch (Exception e) {
-            Jingle.logError(TAB_NAME + ": Auto-clean failed!", e);
         }
     }
 
