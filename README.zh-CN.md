@@ -4,7 +4,7 @@
 
 一个 [Jingle](https://github.com/DuncanRuns/Jingle) 插件，用于清理 SpeedrunIGT 模组在 `%USERPROFILE%\speedrunigt\records` 堆积的速通记录，**同时**清理 MultiMC / Prism Launcher 实例中的 Minecraft 日志文件（`.minecraft/logs`）。
 
-> **本插件仅支持 Jingle 1.3.0，需要 Java 17–21**（推荐 Java 21）。
+> **本插件支持 Jingle 1.1.0 及以上版本（已验证至 v2.0.0+pre5），需要 Java 17 或更高版本。**
 > MultiMC 或 Prism Launcher 仅 MC 日志清理功能需要；速通记录清理可独立使用。
 
 ## 功能

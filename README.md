@@ -4,7 +4,7 @@
 
 A [Jingle](https://github.com/DuncanRuns/Jingle) plugin that cleans up speedrun records left by the [SpeedrunIGT](https://github.com/RedLime/SpeedRunIGT) mod in `%USERPROFILE%\speedrunigt\records`, **and** Minecraft log files in MultiMC / Prism Launcher instances (`.minecraft/logs`).
 
-> **This plugin only supports Jingle 1.3.0 and requires Java 17–21** (Java 21 recommended).
+> **This plugin supports Jingle 1.1.0 and newer (verified up to v2.0.0+pre5) and requires Java 17 or newer.**
 > MultiMC or Prism Launcher is needed only for the MC logs cleaner; the records cleaner works standalone.
 
 ## Features
