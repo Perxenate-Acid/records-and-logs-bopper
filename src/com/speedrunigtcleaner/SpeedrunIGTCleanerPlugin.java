@@ -156,16 +156,16 @@ public final class SpeedrunIGTCleanerPlugin {
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.insets = new Insets(2, 6, 2, 6);
 
         // --- Title ---
         JLabel title = new JLabel("Records & Logs Bopper");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
         panel.add(title, gbc);
 
         // ==================== Section 1: Records Cleaner ====================
         JLabel sec1 = new JLabel("\u2014\u2014 \u901f\u901a\u8bb0\u5f55\u6e05\u7406 \u2014\u2014");
-        sec1.setFont(sec1.getFont().deriveFont(Font.BOLD, 13f));
+        sec1.setFont(sec1.getFont().deriveFont(Font.BOLD, 12f));
         panel.add(sec1, gbc);
 
         statusLabel = new JLabel(" ");
@@ -173,7 +173,7 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(statusLabel, gbc);
 
         JCheckBox keepRecentManualCheckbox = new JCheckBox(
-                "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentManual);
+                "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentManual);
         keepRecentManualCheckbox.addActionListener(e -> {
             keepRecentManual = keepRecentManualCheckbox.isSelected();
             saveConfig();
@@ -189,7 +189,7 @@ public final class SpeedrunIGTCleanerPlugin {
         recordsBtnRow.add(openFolderButton);
         panel.add(recordsBtnRow, gbc);
 
-        JCheckBox autoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u8bb0\u5f55\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", autoCleanEnabled);
+        JCheckBox autoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u8bb0\u5f55", autoCleanEnabled);
         autoCleanCheckbox.addActionListener(e -> {
             autoCleanEnabled = autoCleanCheckbox.isSelected();
             saveConfig();
@@ -220,7 +220,7 @@ public final class SpeedrunIGTCleanerPlugin {
             if (err == null) {
                 int v = Integer.parseInt(recordsKeepField.getText().trim());
                 keepRecentManualCheckbox.setText(
-                        "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
+                        "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
                 keepRecentAutoCheckbox.setText(
                         "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
                 setError(recordsKeepErr, null);
@@ -239,7 +239,7 @@ public final class SpeedrunIGTCleanerPlugin {
             recordsKeepRecent = v;
             recordsKeepField.setText(String.valueOf(v));
             keepRecentManualCheckbox.setText(
-                    "\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
+                    "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
             keepRecentAutoCheckbox.setText(
                     "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55");
             setError(recordsKeepErr, null);
@@ -292,7 +292,7 @@ public final class SpeedrunIGTCleanerPlugin {
 
         // ==================== Section 2: MC Logs Cleaner ====================
         JLabel sec2 = new JLabel("\u2014\u2014 MC \u65e5\u5fd7\u6e05\u7406 \u2014\u2014");
-        sec2.setFont(sec2.getFont().deriveFont(Font.BOLD, 13f));
+        sec2.setFont(sec2.getFont().deriveFont(Font.BOLD, 12f));
         panel.add(sec2, gbc);
 
         // MultiMC path row
@@ -354,7 +354,7 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(new JSeparator(), gbc);
 
         // --- Auto-clean logs section ---
-        JCheckBox logsAutoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7\uff08\u8d85\u51fa\u9608\u503c\u5219\u6e05\u7406\uff09", logsAutoCleanEnabled);
+        JCheckBox logsAutoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7", logsAutoCleanEnabled);
         logsAutoCleanCheckbox.addActionListener(e -> {
             logsAutoCleanEnabled = logsAutoCleanCheckbox.isSelected();
             saveConfig();
@@ -611,12 +611,6 @@ public final class SpeedrunIGTCleanerPlugin {
     /* ------------------------------------------------------------------ */
 
     private static void cleanAndReport() {
-        int confirm = JOptionPane.showConfirmDialog(JingleGUI.get(),
-                "\u5373\u5c06\u5220\u9664 SpeedrunIGT \u901f\u901a\u8bb0\u5f55\u6587\u4ef6\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f",
-                TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
-        }
         new Thread(() -> {
             try {
                 int keep = keepRecentManual ? recordsKeepRecent : 0;
@@ -624,7 +618,7 @@ public final class SpeedrunIGTCleanerPlugin {
                 SwingUtilities.invokeLater(() -> {
                     updateStatusLabel();
                     String message = "\u5df2\u5220\u9664 " + result.filesDeleted + " \u4e2a\u8bb0\u5f55\u6587\u4ef6\uff0c\u91ca\u653e "
-                            + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB\u3002\nrecords \u6587\u4ef6\u5939\u5df2\u4fdd\u7559\u3002";
+                            + MB_FORMAT.format(result.bytesFreed / 1024.0 / 1024.0) + " MB\u3002";
                     if (keep > 0) {
                         message += "\n\u5df2\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55\u6587\u4ef6\u3002";
                     }
@@ -802,14 +796,6 @@ public final class SpeedrunIGTCleanerPlugin {
     }
 
     private static void cleanAllLogsAndReport() {
-        String warnMsg = logsKeepRecentManual
-                ? "\u5373\u5c06\u5220\u9664 MC \u65e7\u65e5\u5fd7\uff08\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f"
-                : "\u5373\u5c06\u5220\u9664\u6240\u6709 MC \u65e7\u65e5\u5fd7\uff08\u4ec5\u4fdd\u7559 latest.log\uff09\u3002\n\u786e\u5b9a\u8981\u7ee7\u7eed\u5417\uff1f";
-        int confirm = JOptionPane.showConfirmDialog(JingleGUI.get(),
-                warnMsg, TAB_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
-        }
         new Thread(() -> {
             try {
                 if (multimcPath == null || multimcPath.isEmpty()) {
