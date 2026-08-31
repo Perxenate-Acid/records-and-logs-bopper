@@ -220,16 +220,7 @@ public final class SpeedrunIGTCleanerPlugin {
 
         addLiveTextSync(recordsKeepField, () -> {
             String err = validateCount(recordsKeepField.getText());
-            if (err == null) {
-                int v = Integer.parseInt(recordsKeepField.getText().trim());
-                keepRecentManualCheckbox.setText(
-                        "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
-                keepRecentAutoCheckbox.setText(
-                        "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u8bb0\u5f55");
-                setError(recordsKeepErr, null);
-            } else {
-                setError(recordsKeepErr, err);
-            }
+            setError(recordsKeepErr, err);
         });
 
         Runnable applyRecordsKeep = () -> {
@@ -409,20 +400,7 @@ public final class SpeedrunIGTCleanerPlugin {
 
         addLiveTextSync(keepRecentField, () -> {
             String err = validateCount(keepRecentField.getText());
-            if (err == null) {
-                int v = Integer.parseInt(keepRecentField.getText().trim());
-                if (logsKeepRecentManualCheckbox != null) {
-                    logsKeepRecentManualCheckbox.setText(
-                            "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
-                }
-                if (logsKeepRecentAutoCheckbox != null) {
-                    logsKeepRecentAutoCheckbox.setText(
-                            "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
-                }
-                setError(logsKeepErr, null);
-            } else {
-                setError(logsKeepErr, err);
-            }
+            setError(logsKeepErr, err);
         });
 
         Runnable applyLogsThreshold = () -> {
