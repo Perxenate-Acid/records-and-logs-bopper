@@ -156,7 +156,7 @@ public final class SpeedrunIGTCleanerPlugin {
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 6, 0, 6);
+        gbc.insets = new Insets(2, 6, 2, 6);
 
         // --- Title ---
         JLabel title = new JLabel("Records & Logs Bopper");
@@ -172,23 +172,23 @@ public final class SpeedrunIGTCleanerPlugin {
         statusLabel.setFont(statusLabel.getFont().deriveFont(12f));
         panel.add(statusLabel, gbc);
 
+        JPanel recordsManualRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         JCheckBox keepRecentManualCheckbox = new JCheckBox(
                 "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentManual);
         keepRecentManualCheckbox.addActionListener(e -> {
             keepRecentManual = keepRecentManualCheckbox.isSelected();
             saveConfig();
         });
-        panel.add(keepRecentManualCheckbox, gbc);
-
-        JPanel recordsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        recordsManualRow.add(keepRecentManualCheckbox);
         JButton cleanButton = new JButton("\u7acb\u5373\u6e05\u7406\u8bb0\u5f55");
         cleanButton.addActionListener(e -> cleanAndReport());
-        recordsBtnRow.add(cleanButton);
+        recordsManualRow.add(cleanButton);
         JButton openFolderButton = new JButton("\u6253\u5f00 records \u6587\u4ef6\u5939");
         openFolderButton.addActionListener(e -> openRecordsFolder());
-        recordsBtnRow.add(openFolderButton);
-        panel.add(recordsBtnRow, gbc);
+        recordsManualRow.add(openFolderButton);
+        panel.add(recordsManualRow, gbc);
 
+        JPanel recordsAutoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         JCheckBox autoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u8bb0\u5f55", autoCleanEnabled);
         autoCleanCheckbox.addActionListener(e -> {
             autoCleanEnabled = autoCleanCheckbox.isSelected();
@@ -197,15 +197,15 @@ public final class SpeedrunIGTCleanerPlugin {
                 triggerImmediateAutoClean();
             }
         });
-        panel.add(autoCleanCheckbox, gbc);
-
+        recordsAutoRow.add(autoCleanCheckbox);
         JCheckBox keepRecentAutoCheckbox = new JCheckBox(
                 "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentAuto);
         keepRecentAutoCheckbox.addActionListener(e -> {
             keepRecentAuto = keepRecentAutoCheckbox.isSelected();
             saveConfig();
         });
-        panel.add(keepRecentAutoCheckbox, gbc);
+        recordsAutoRow.add(keepRecentAutoCheckbox);
+        panel.add(recordsAutoRow, gbc);
 
         JPanel recordsKeepRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         recordsKeepRow.add(new JLabel("\u4fdd\u7559\u8bb0\u5f55\u6570\u91cf:"));
@@ -213,7 +213,6 @@ public final class SpeedrunIGTCleanerPlugin {
         recordsKeepRow.add(recordsKeepField);
         JLabel recordsKeepErr = makeErrorLabel();
         recordsKeepRow.add(recordsKeepErr);
-        panel.add(recordsKeepRow, gbc);
 
         addLiveTextSync(recordsKeepField, () -> {
             String err = validateCount(recordsKeepField.getText());
@@ -253,13 +252,12 @@ public final class SpeedrunIGTCleanerPlugin {
             }
         });
 
-        JPanel thresholdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        thresholdRow.add(new JLabel("\u8bb0\u5f55\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
+        recordsKeepRow.add(new JLabel("\u8bb0\u5f55\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
         JTextField thresholdField = new JTextField(String.valueOf((long) thresholdMB), 8);
-        thresholdRow.add(thresholdField);
+        recordsKeepRow.add(thresholdField);
         JLabel thresholdErr = makeErrorLabel();
-        thresholdRow.add(thresholdErr);
-        panel.add(thresholdRow, gbc);
+        recordsKeepRow.add(thresholdErr);
+        panel.add(recordsKeepRow, gbc);
 
         addLiveTextSync(thresholdField, () -> {
             String err = validateThreshold(thresholdField.getText());
@@ -370,20 +368,17 @@ public final class SpeedrunIGTCleanerPlugin {
         logsThresholdRow.add(logsThresholdField);
         JLabel logsThresholdErr = makeErrorLabel();
         logsThresholdRow.add(logsThresholdErr);
+        logsThresholdRow.add(new JLabel("\u4fdd\u7559\u6700\u8fd1\u65e5\u5fd7\u6570\u91cf:"));
+        JTextField keepRecentField = new JTextField(String.valueOf(logsKeepRecent), 8);
+        logsThresholdRow.add(keepRecentField);
+        JLabel logsKeepErr = makeErrorLabel();
+        logsThresholdRow.add(logsKeepErr);
         panel.add(logsThresholdRow, gbc);
 
         addLiveTextSync(logsThresholdField, () -> {
             String err = validateThreshold(logsThresholdField.getText());
             setError(logsThresholdErr, err);
         });
-
-        JPanel keepRecentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        keepRecentRow.add(new JLabel("\u4fdd\u7559\u6700\u8fd1\u65e5\u5fd7\u6570\u91cf:"));
-        JTextField keepRecentField = new JTextField(String.valueOf(logsKeepRecent), 8);
-        keepRecentRow.add(keepRecentField);
-        JLabel logsKeepErr = makeErrorLabel();
-        keepRecentRow.add(logsKeepErr);
-        panel.add(keepRecentRow, gbc);
 
         addLiveTextSync(keepRecentField, () -> {
             String err = validateCount(keepRecentField.getText());
@@ -446,18 +441,17 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(new JSeparator(), gbc);
 
         // --- Manual clean logs ---
+        JPanel logsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
+        cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
+        logsBtnRow.add(cleanLogsButton);
         logsKeepRecentManualCheckbox = new JCheckBox(
                 "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7", logsKeepRecentManual);
         logsKeepRecentManualCheckbox.addActionListener(e -> {
             logsKeepRecentManual = logsKeepRecentManualCheckbox.isSelected();
             saveConfig();
         });
-        panel.add(logsKeepRecentManualCheckbox, gbc);
-
-        JPanel logsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
-        cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
-        logsBtnRow.add(cleanLogsButton);
+        logsBtnRow.add(logsKeepRecentManualCheckbox);
         panel.add(logsBtnRow, gbc);
 
         // Extra bottom padding
