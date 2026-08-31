@@ -414,6 +414,7 @@ public final class SpeedrunIGTCleanerPlugin {
             logsThresholdField.setText(formatMb(v));
             setError(logsThresholdErr, null);
             saveConfig();
+            refreshLogsStatus();
         };
         logsThresholdField.addActionListener(e -> applyLogsThreshold.run());
         logsThresholdField.addFocusListener(new FocusAdapter() {
