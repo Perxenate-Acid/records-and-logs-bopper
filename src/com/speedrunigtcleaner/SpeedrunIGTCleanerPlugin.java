@@ -156,7 +156,7 @@ public final class SpeedrunIGTCleanerPlugin {
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(2, 6, 2, 6);
+        gbc.insets = new Insets(0, 6, 0, 6);
 
         // --- Title ---
         JLabel title = new JLabel("Records & Logs Bopper");
