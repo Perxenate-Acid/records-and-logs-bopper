@@ -40,7 +40,7 @@ import java.util.Properties;
  * Jingle plugin ("Records & Logs Bopper") that cleans up:
  *   1. SpeedrunIGT "records" folder (%USERPROFILE%\speedrunigt\records)
  *      where the mod keeps speedrun records that pile up over time.
- *   2. Minecraft log files in MultiMC / Prism Launcher instances
+ *   2. Minecraft log files in MultiMC/Prism Launcher instances
  *      (.minecraft/logs), preserving latest.log and keeping recent logs.
  */
 public final class SpeedrunIGTCleanerPlugin {
@@ -61,6 +61,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final String PROP_LOGS_THRESHOLD_MB = "logsThresholdMB";
     private static final String PROP_LOGS_KEEP_RECENT = "logsKeepRecent";
     private static final String PROP_LOGS_KEEP_RECENT_MANUAL = "logsKeepRecentManual";
+    private static final String PROP_LOGS_KEEP_RECENT_AUTO = "logsKeepRecentAuto";
     private static final String PROP_MULTIMC_PATH = "multimcPath";
 
     private static final boolean DEFAULT_AUTO_CLEAN = false;
@@ -72,6 +73,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static final double DEFAULT_LOGS_THRESHOLD_MB = 50.0;
     private static final int DEFAULT_LOGS_KEEP_RECENT = 5;
     private static final boolean DEFAULT_LOGS_KEEP_RECENT_MANUAL = true;
+    private static final boolean DEFAULT_LOGS_KEEP_RECENT_AUTO = true;
 
     private static final DecimalFormat MB_FORMAT = new DecimalFormat("0.0");
     private static final Color ERROR_COLOR = new Color(0xC62828);
@@ -87,6 +89,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static JLabel logsStatusLabel;
     private static JTextField multimcPathField;
     private static JCheckBox logsKeepRecentManualCheckbox;
+    private static JCheckBox logsKeepRecentAutoCheckbox;
 
     private static boolean autoCleanEnabled = DEFAULT_AUTO_CLEAN;
     private static double thresholdMB = DEFAULT_THRESHOLD_MB;
@@ -98,6 +101,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static double logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
     private static int logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
     private static boolean logsKeepRecentManual = DEFAULT_LOGS_KEEP_RECENT_MANUAL;
+    private static boolean logsKeepRecentAuto = DEFAULT_LOGS_KEEP_RECENT_AUTO;
     private static String multimcPath = "";
 
     private SpeedrunIGTCleanerPlugin() {
@@ -295,7 +299,7 @@ public final class SpeedrunIGTCleanerPlugin {
 
         // MultiMC path row
         JPanel pathRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        pathRow.add(new JLabel("MultiMC \u8def\u5f84:"));
+        pathRow.add(new JLabel("MultiMC/Prism \u8def\u5f84:"));
         multimcPathField = new JTextField(multimcPath, 30);
         pathRow.add(multimcPathField);
         JButton browseButton = new JButton("Browse");
@@ -317,7 +321,7 @@ public final class SpeedrunIGTCleanerPlugin {
                         "\u5df2\u68c0\u6d4b\u5230\uff1a" + multimcPath, TAB_NAME, JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(JingleGUI.get(),
-                        "\u672a\u627e\u5230 MultiMC / Prism Launcher\uff0c\u8bf7\u624b\u52a8\u9009\u62e9\u8def\u5f84\u3002",
+                        "\u672a\u627e\u5230 MultiMC/Prism Launcher\uff0c\u8bf7\u624b\u52a8\u9009\u62e9\u8def\u5f84\u3002",
                         TAB_NAME, JOptionPane.INFORMATION_MESSAGE);
             }
         });
@@ -366,6 +370,7 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(logsBtnRow, gbc);
 
         // --- Auto-clean logs section ---
+        JPanel logsAutoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         JCheckBox logsAutoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7", logsAutoCleanEnabled);
         logsAutoCleanCheckbox.addActionListener(e -> {
             logsAutoCleanEnabled = logsAutoCleanCheckbox.isSelected();
@@ -374,19 +379,27 @@ public final class SpeedrunIGTCleanerPlugin {
                 triggerImmediateAutoClean();
             }
         });
-        panel.add(logsAutoCleanCheckbox, gbc);
+        logsAutoRow.add(logsAutoCleanCheckbox);
+        logsKeepRecentAutoCheckbox = new JCheckBox(
+                "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7", logsKeepRecentAuto);
+        logsKeepRecentAutoCheckbox.addActionListener(e -> {
+            logsKeepRecentAuto = logsKeepRecentAutoCheckbox.isSelected();
+            saveConfig();
+        });
+        logsAutoRow.add(logsKeepRecentAutoCheckbox);
+        panel.add(logsAutoRow, gbc);
 
         JPanel logsThresholdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        logsThresholdRow.add(new JLabel("\u65e5\u5fd7\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
-        JTextField logsThresholdField = new JTextField(String.valueOf((long) logsThresholdMB), 8);
-        logsThresholdRow.add(logsThresholdField);
-        JLabel logsThresholdErr = makeErrorLabel();
-        logsThresholdRow.add(logsThresholdErr);
         logsThresholdRow.add(new JLabel("\u4fdd\u7559\u6700\u8fd1\u65e5\u5fd7\u6570\u91cf:"));
         JTextField keepRecentField = new JTextField(String.valueOf(logsKeepRecent), 8);
         logsThresholdRow.add(keepRecentField);
         JLabel logsKeepErr = makeErrorLabel();
         logsThresholdRow.add(logsKeepErr);
+        logsThresholdRow.add(new JLabel("\u65e5\u5fd7\u81ea\u52a8\u6e05\u7406\u9608\u503c (MB):"));
+        JTextField logsThresholdField = new JTextField(String.valueOf((long) logsThresholdMB), 8);
+        logsThresholdRow.add(logsThresholdField);
+        JLabel logsThresholdErr = makeErrorLabel();
+        logsThresholdRow.add(logsThresholdErr);
         panel.add(logsThresholdRow, gbc);
 
         addLiveTextSync(logsThresholdField, () -> {
@@ -401,6 +414,10 @@ public final class SpeedrunIGTCleanerPlugin {
                 if (logsKeepRecentManualCheckbox != null) {
                     logsKeepRecentManualCheckbox.setText(
                             "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
+                }
+                if (logsKeepRecentAutoCheckbox != null) {
+                    logsKeepRecentAutoCheckbox.setText(
+                            "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + v + " \u4e2a\u65e5\u5fd7");
                 }
                 setError(logsKeepErr, null);
             } else {
@@ -440,6 +457,10 @@ public final class SpeedrunIGTCleanerPlugin {
             if (logsKeepRecentManualCheckbox != null) {
                 logsKeepRecentManualCheckbox.setText(
                         "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7");
+            }
+            if (logsKeepRecentAutoCheckbox != null) {
+                logsKeepRecentAutoCheckbox.setText(
+                        "\u81ea\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7");
             }
             setError(logsKeepErr, null);
             saveConfig();
@@ -722,7 +743,7 @@ public final class SpeedrunIGTCleanerPlugin {
     private static void browseMultiMC() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        chooser.setDialogTitle("\u9009\u62e9 MultiMC / Prism Launcher \u5b89\u88c5\u76ee\u5f55\u6216 exe");
+        chooser.setDialogTitle("\u9009\u62e9 MultiMC/Prism Launcher \u5b89\u88c5\u76ee\u5f55\u6216 exe");
         if (multimcPath != null && !multimcPath.isEmpty()) {
             File currentDir = new File(multimcPath);
             if (currentDir.isDirectory()) {
@@ -753,7 +774,7 @@ public final class SpeedrunIGTCleanerPlugin {
         }
         try {
             if (multimcPath == null || multimcPath.isEmpty()) {
-                logsStatusLabel.setText("<html>MultiMC \u8def\u5f84\u672a\u8bbe\u7f6e\u3002\u8bf7\u70b9\u51fb \"Auto Detect\" \u81ea\u52a8\u8bc6\u522b\uff0c\u6216\u70b9\u51fb \"Browse\" \u624b\u52a8\u9009\u62e9\u3002</html>");
+                logsStatusLabel.setText("<html>MultiMC/Prism \u8def\u5f84\u672a\u8bbe\u7f6e\u3002\u8bf7\u70b9\u51fb \"Auto Detect\" \u81ea\u52a8\u8bc6\u522b\uff0c\u6216\u70b9\u51fb \"Browse\" \u624b\u52a8\u9009\u62e9\u3002</html>");
                 return;
             }
             Path multimcDir = Paths.get(multimcPath);
@@ -763,7 +784,7 @@ public final class SpeedrunIGTCleanerPlugin {
             }
             List<MultiMCDetector.InstanceInfo> instances = MultiMCDetector.getInstances(multimcDir);
             if (instances.isEmpty()) {
-                logsStatusLabel.setText("<html>MultiMC: " + multimcPath + "<br>\u672a\u627e\u5230\u542b logs \u6587\u4ef6\u5939\u7684\u5b9e\u4f8b\u3002</html>");
+                logsStatusLabel.setText("<html>MultiMC/Prism: " + multimcPath + "<br>\u672a\u627e\u5230\u542b logs \u6587\u4ef6\u5939\u7684\u5b9e\u4f8b\u3002</html>");
                 return;
             }
             long totalSize = 0;
@@ -772,7 +793,7 @@ public final class SpeedrunIGTCleanerPlugin {
                 totalSize += inst.logSize;
                 totalCount += inst.logCount;
             }
-            StringBuilder sb = new StringBuilder("<html>MultiMC: " + multimcPath + "<br>");
+            StringBuilder sb = new StringBuilder("<html>MultiMC/Prism: " + multimcPath + "<br>");
             sb.append("\u68c0\u6d4b\u5230 <b>").append(instances.size()).append("</b> \u4e2a\u5b9e\u4f8b | \u603b\u65e5\u5fd7: <b>")
               .append(MB_FORMAT.format(totalSize / 1024.0 / 1024.0)).append(" MB</b> (").append(totalCount).append(" \u4e2a\u6587\u4ef6)")
               .append("&nbsp;&nbsp;|&nbsp;&nbsp;\u81ea\u52a8\u6e05\u7406\u9608\u503c: ").append((long) logsThresholdMB).append(" MB")
@@ -794,7 +815,7 @@ public final class SpeedrunIGTCleanerPlugin {
             try {
                 if (multimcPath == null || multimcPath.isEmpty()) {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(JingleGUI.get(),
-                            "\u8bf7\u5148\u8bbe\u7f6e MultiMC \u8def\u5f84\u3002", TAB_NAME, JOptionPane.WARNING_MESSAGE));
+                            "\u8bf7\u5148\u8bbe\u7f6e MultiMC/Prism \u8def\u5f84\u3002", TAB_NAME, JOptionPane.WARNING_MESSAGE));
                     return;
                 }
                 Path multimcDir = Paths.get(multimcPath);
@@ -855,14 +876,14 @@ public final class SpeedrunIGTCleanerPlugin {
                 }
                 if (multimcPath == null || multimcPath.isEmpty()) {
                     if (logWhenSkipped) {
-                        Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, MultiMC path not set.");
+                        Jingle.log(Level.INFO, TAB_NAME + ": Auto-clean skipped, MultiMC/Prism path not set.");
                     }
                     return;
                 }
                 Path multimcDir = Paths.get(multimcPath);
                 if (!MultiMCDetector.isValidMultiMCDir(multimcDir)) {
                     if (logWhenSkipped) {
-                        Jingle.log(Level.WARN, TAB_NAME + ": Auto-clean skipped, invalid MultiMC path: " + multimcPath);
+                        Jingle.log(Level.WARN, TAB_NAME + ": Auto-clean skipped, invalid MultiMC/Prism path: " + multimcPath);
                     }
                     return;
                 }
@@ -890,7 +911,7 @@ public final class SpeedrunIGTCleanerPlugin {
                 long totalFreed = 0;
                 int totalFailures = 0;
                 for (MultiMCDetector.InstanceInfo inst : instances) {
-                    LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(inst.logsDir, logsKeepRecent);
+                    LogsCleaner.CleanResult r = LogsCleaner.cleanLogs(inst.logsDir, logsKeepRecentAuto ? logsKeepRecent : 0);
                     totalDeleted += r.filesDeleted;
                     totalFreed += r.bytesFreed;
                     totalFailures += r.failures;
@@ -933,6 +954,7 @@ public final class SpeedrunIGTCleanerPlugin {
         logsThresholdMB = DEFAULT_LOGS_THRESHOLD_MB;
         logsKeepRecent = DEFAULT_LOGS_KEEP_RECENT;
         logsKeepRecentManual = DEFAULT_LOGS_KEEP_RECENT_MANUAL;
+        logsKeepRecentAuto = DEFAULT_LOGS_KEEP_RECENT_AUTO;
         multimcPath = "";
         if (configPath == null || !Files.exists(configPath)) {
             return;
@@ -963,6 +985,8 @@ public final class SpeedrunIGTCleanerPlugin {
             }
             logsKeepRecentManual = Boolean.parseBoolean(props.getProperty(
                     PROP_LOGS_KEEP_RECENT_MANUAL, String.valueOf(DEFAULT_LOGS_KEEP_RECENT_MANUAL)));
+            logsKeepRecentAuto = Boolean.parseBoolean(props.getProperty(
+                    PROP_LOGS_KEEP_RECENT_AUTO, String.valueOf(DEFAULT_LOGS_KEEP_RECENT_AUTO)));
             multimcPath = props.getProperty(PROP_MULTIMC_PATH, "");
         } catch (IOException | NumberFormatException e) {
             Jingle.log(Level.WARN, TAB_NAME + ": Failed to load config, using defaults.");
@@ -985,6 +1009,7 @@ public final class SpeedrunIGTCleanerPlugin {
             props.setProperty(PROP_LOGS_THRESHOLD_MB, String.valueOf(logsThresholdMB));
             props.setProperty(PROP_LOGS_KEEP_RECENT, String.valueOf(logsKeepRecent));
             props.setProperty(PROP_LOGS_KEEP_RECENT_MANUAL, String.valueOf(logsKeepRecentManual));
+            props.setProperty(PROP_LOGS_KEEP_RECENT_AUTO, String.valueOf(logsKeepRecentAuto));
             props.setProperty(PROP_MULTIMC_PATH, multimcPath);
             try (OutputStream out = Files.newOutputStream(configPath)) {
                 props.store(out, "Records & Logs Bopper config");
