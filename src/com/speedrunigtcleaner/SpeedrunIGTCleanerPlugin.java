@@ -351,6 +351,20 @@ public final class SpeedrunIGTCleanerPlugin {
 
         panel.add(new JSeparator(), gbc);
 
+        // --- Manual clean logs ---
+        JPanel logsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
+        cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
+        logsBtnRow.add(cleanLogsButton);
+        logsKeepRecentManualCheckbox = new JCheckBox(
+                "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7", logsKeepRecentManual);
+        logsKeepRecentManualCheckbox.addActionListener(e -> {
+            logsKeepRecentManual = logsKeepRecentManualCheckbox.isSelected();
+            saveConfig();
+        });
+        logsBtnRow.add(logsKeepRecentManualCheckbox);
+        panel.add(logsBtnRow, gbc);
+
         // --- Auto-clean logs section ---
         JCheckBox logsAutoCleanCheckbox = new JCheckBox("Jingle \u8fd0\u884c\u65f6\u81ea\u52a8\u6e05\u7406\u65e5\u5fd7", logsAutoCleanEnabled);
         logsAutoCleanCheckbox.addActionListener(e -> {
@@ -439,20 +453,6 @@ public final class SpeedrunIGTCleanerPlugin {
         });
 
         panel.add(new JSeparator(), gbc);
-
-        // --- Manual clean logs ---
-        JPanel logsBtnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        JButton cleanLogsButton = new JButton("\u7acb\u5373\u6e05\u7406\u65e7\u65e5\u5fd7");
-        cleanLogsButton.addActionListener(e -> cleanAllLogsAndReport());
-        logsBtnRow.add(cleanLogsButton);
-        logsKeepRecentManualCheckbox = new JCheckBox(
-                "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + logsKeepRecent + " \u4e2a\u65e5\u5fd7", logsKeepRecentManual);
-        logsKeepRecentManualCheckbox.addActionListener(e -> {
-            logsKeepRecentManual = logsKeepRecentManualCheckbox.isSelected();
-            saveConfig();
-        });
-        logsBtnRow.add(logsKeepRecentManualCheckbox);
-        panel.add(logsBtnRow, gbc);
 
         // Extra bottom padding
         gbc.weighty = 1.0;
