@@ -173,6 +173,12 @@ public final class SpeedrunIGTCleanerPlugin {
         panel.add(statusLabel, gbc);
 
         JPanel recordsManualRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton cleanButton = new JButton("\u7acb\u5373\u6e05\u7406\u8bb0\u5f55");
+        cleanButton.addActionListener(e -> cleanAndReport());
+        recordsManualRow.add(cleanButton);
+        JButton openFolderButton = new JButton("\u6253\u5f00 records \u6587\u4ef6\u5939");
+        openFolderButton.addActionListener(e -> openRecordsFolder());
+        recordsManualRow.add(openFolderButton);
         JCheckBox keepRecentManualCheckbox = new JCheckBox(
                 "\u624b\u52a8\u6e05\u7406\u65f6\u4fdd\u7559\u6700\u8fd1 " + recordsKeepRecent + " \u4e2a\u8bb0\u5f55", keepRecentManual);
         keepRecentManualCheckbox.addActionListener(e -> {
@@ -180,12 +186,6 @@ public final class SpeedrunIGTCleanerPlugin {
             saveConfig();
         });
         recordsManualRow.add(keepRecentManualCheckbox);
-        JButton cleanButton = new JButton("\u7acb\u5373\u6e05\u7406\u8bb0\u5f55");
-        cleanButton.addActionListener(e -> cleanAndReport());
-        recordsManualRow.add(cleanButton);
-        JButton openFolderButton = new JButton("\u6253\u5f00 records \u6587\u4ef6\u5939");
-        openFolderButton.addActionListener(e -> openRecordsFolder());
-        recordsManualRow.add(openFolderButton);
         panel.add(recordsManualRow, gbc);
 
         JPanel recordsAutoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
